@@ -1,0 +1,44 @@
+# Binaries
+bin/
+build/
+agentfs
+
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+
+# AgentFS directories
+.agentfs/
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+
+# Test coverage
+coverage.txt
+profile.out
+
+# Go workspace file
+go.work
+
+# Temporary folders
+tmp/
+temp/
+
+# macOS
+.DS_Store
