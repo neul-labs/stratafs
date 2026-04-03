@@ -1,9 +1,33 @@
-# AgentFS
+# AgentFS: The Agentic Filesystem
 
-AgentFS is a Go application that monitors directories for file changes and maintains an updated `.agentfs` directory in all directories and subdirectories. Each `.agentfs` directory contains:
+**"Where traditional filesystems end, agentic intelligence begins"**
 
-1. A SQLite database with file chunks and full-text search capabilities
-2. A usearch vector search index for semantic search
+## The Evolution of Filesystems for the AI Era
+
+As we enter the age of agentic AI systems, traditional filesystems are no longer sufficient. While they've served us well for organizing and storing data in hierarchical structures, they lack the semantic understanding and intelligent primitives that AI agents need to truly understand and interact with our digital knowledge.
+
+AgentFS represents the next evolution in filesystem design - one that bridges the gap between raw data storage and intelligent information retrieval. It transforms passive file storage into an active, searchable, and semantically-aware knowledge base that AI agents can reason about and interact with naturally.
+
+### Why Traditional Filesystems Fall Short
+
+Traditional filesystems are fundamentally limited because they:
+
+1. **Lack Semantic Understanding**: Files are organized by names and paths, not by meaning or context
+2. **Have No Built-in Search**: Searching requires external tools and indexes that are often outdated
+3. **Miss Implicit Relationships**: Connections between related files across directories are not discoverable
+4. **Provide No Agentic Primitives**: There's no built-in way for AI agents to ask questions or discover insights
+
+### AgentFS: Bridging the Gap
+
+AgentFS introduces agentic primitives directly into the filesystem layer:
+
+- **Semantic Indexing**: Every file is automatically parsed, chunked, and indexed with vector embeddings
+- **Intelligent Search**: Natural language queries that understand context and intent
+- **Cross-File Relationships**: Automatic discovery of connections between related content
+- **Agentic APIs**: Model Context Protocol (MCP) server for direct AI agent integration
+- **File-Type Intelligence**: Specialized parsers that understand the structure and meaning of different file types
+
+With AgentFS, your filesystem becomes a collaborative intelligence partner rather than just a data store.
 
 ## Features
 
