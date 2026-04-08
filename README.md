@@ -1,8 +1,8 @@
 # AgentFS: The Agentic Filesystem
 
-**"Where traditional filesystems end, agentic intelligence begins"**
-
 ## The Evolution of Filesystems for the AI Era
+
+"Where traditional filesystems end, agentic intelligence begins"
 
 As we enter the age of agentic AI systems, traditional filesystems are no longer sufficient. While they've served us well for organizing and storing data in hierarchical structures, they lack the semantic understanding and intelligent primitives that AI agents need to truly understand and interact with our digital knowledge.
 
