@@ -76,11 +76,7 @@ AgentFS can be configured using environment variables:
 
 ## Embedding Support
 
-AgentFS uses the fastembed-go library for text embeddings. This library requires the ONNX Runtime library to be installed on your system.
-
-If the ONNX Runtime is not available, AgentFS will fall back to a mock implementation that generates deterministic embeddings based on text content. This allows the application to function for testing and development.
-
-For full functionality, please install the ONNX Runtime by following the instructions in [ONNX_INSTALL.md](ONNX_INSTALL.md).
+AgentFS uses the kelindar/search library for text embeddings, which provides GGUF BERT models without requiring external dependencies like ONNX Runtime. This ensures AgentFS is a fully self-contained binary that works out of the box.
 
 ## Full-Text Search
 

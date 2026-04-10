@@ -8,6 +8,7 @@ import (
 	"unsafe"
 
 	_ "github.com/mattn/go-sqlite3"
+	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
 )
 
 // DB represents a connection to the agentfs SQLite database
@@ -41,23 +42,26 @@ type File struct {
 
 // NewDB creates a new database connection and initializes the schema
 func NewDB(path string) (*DB, error) {
+	// Load sqlite-vec extension
+	sqlite_vec.Auto()
+
 	conn, err := sql.Open("sqlite3", fmt.Sprintf("file:%s?_journal_mode=WAL&_busy_timeout=10000", path))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
-	
+
 	// Set connection pool settings
 	conn.SetMaxOpenConns(25)
 	conn.SetMaxIdleConns(25)
 	conn.SetConnMaxLifetime(5 * time.Minute)
-	
+
 	db := &DB{conn: conn}
-	
+
 	// Initialize schema
 	if err := db.initSchema(); err != nil {
 		return nil, fmt.Errorf("failed to initialize schema: %w", err)
 	}
-	
+
 	return db, nil
 }
 
@@ -435,6 +439,176 @@ func (db *DB) Compact() error {
 	}
 	
 	return nil
+}
+
+// OptimizeIndexes optimizes database indexes
+func (db *DB) OptimizeIndexes() error {
+	// Optimize FTS5 index if available
+	_, err := db.conn.Exec("INSERT INTO chunks_fts(chunks_fts) VALUES('optimize')")
+	if err != nil {
+		// FTS5 might not be available, ignore the error
+	}
+
+	// Analyze all tables to update statistics
+	_, err = db.conn.Exec("ANALYZE")
+	if err != nil {
+		return fmt.Errorf("failed to analyze database: %w", err)
+	}
+
+	// Vacuum the database to reclaim space
+	_, err = db.conn.Exec("VACUUM")
+	if err != nil {
+		return fmt.Errorf("failed to vacuum database: %w", err)
+	}
+
+	return nil
+}
+
+// GetFileByID retrieves a file by its ID
+func (db *DB) GetFileByID(fileID int64) (*File, error) {
+	file := &File{}
+	var deletedAt sql.NullTime
+
+	err := db.conn.QueryRow(`
+		SELECT id, path, checksum, size, created_at, updated_at, deleted_at
+		FROM files WHERE id = ? AND deleted_at IS NULL
+	`, fileID).Scan(
+		&file.ID, &file.Path, &file.Checksum, &file.Size,
+		&file.CreatedAt, &file.UpdatedAt, &deletedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if deletedAt.Valid {
+		file.DeletedAt = &deletedAt.Time
+	}
+
+	return file, nil
+}
+
+// GetFileByPath retrieves a file by its path
+func (db *DB) GetFileByPath(path string) (*File, error) {
+	file := &File{}
+	var deletedAt sql.NullTime
+
+	err := db.conn.QueryRow(`
+		SELECT id, path, checksum, size, created_at, updated_at, deleted_at
+		FROM files WHERE path = ? AND deleted_at IS NULL
+	`, path).Scan(
+		&file.ID, &file.Path, &file.Checksum, &file.Size,
+		&file.CreatedAt, &file.UpdatedAt, &deletedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if deletedAt.Valid {
+		file.DeletedAt = &deletedAt.Time
+	}
+
+	return file, nil
+}
+
+// GetAllFiles retrieves all non-deleted files
+func (db *DB) GetAllFiles() ([]*File, error) {
+	rows, err := db.conn.Query(`
+		SELECT id, path, checksum, size, created_at, updated_at, deleted_at
+		FROM files WHERE deleted_at IS NULL
+		ORDER BY updated_at DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var files []*File
+	for rows.Next() {
+		file := &File{}
+		var deletedAt sql.NullTime
+
+		err := rows.Scan(
+			&file.ID, &file.Path, &file.Checksum, &file.Size,
+			&file.CreatedAt, &file.UpdatedAt, &deletedAt,
+		)
+		if err != nil {
+			continue
+		}
+
+		if deletedAt.Valid {
+			file.DeletedAt = &deletedAt.Time
+		}
+
+		files = append(files, file)
+	}
+
+	return files, nil
+}
+
+// GetChunkByID retrieves a chunk by its ID
+func (db *DB) GetChunkByID(chunkID int64) (*FileChunk, error) {
+	chunk := &FileChunk{}
+	var deletedAt sql.NullTime
+
+	err := db.conn.QueryRow(`
+		SELECT id, file_id, content, embedding, offset, length, created_at, updated_at, deleted_at
+		FROM chunks WHERE id = ? AND deleted_at IS NULL
+	`, chunkID).Scan(
+		&chunk.ID, &chunk.FileID, &chunk.Content, &chunk.Embedding,
+		&chunk.Offset, &chunk.Length, &chunk.CreatedAt, &chunk.UpdatedAt, &deletedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if deletedAt.Valid {
+		chunk.DeletedAt = &deletedAt.Time
+	}
+
+	return chunk, nil
+}
+
+// GetChunksByFileID retrieves all chunks for a file
+func (db *DB) GetChunksByFileID(fileID int64) ([]*FileChunk, error) {
+	rows, err := db.conn.Query(`
+		SELECT id, file_id, content, embedding, offset, length, created_at, updated_at, deleted_at
+		FROM chunks WHERE file_id = ? AND deleted_at IS NULL
+		ORDER BY offset ASC
+	`, fileID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var chunks []*FileChunk
+	for rows.Next() {
+		chunk := &FileChunk{}
+		var deletedAt sql.NullTime
+
+		err := rows.Scan(
+			&chunk.ID, &chunk.FileID, &chunk.Content, &chunk.Embedding,
+			&chunk.Offset, &chunk.Length, &chunk.CreatedAt, &chunk.UpdatedAt, &deletedAt,
+		)
+		if err != nil {
+			continue
+		}
+
+		if deletedAt.Valid {
+			chunk.DeletedAt = &deletedAt.Time
+		}
+
+		chunks = append(chunks, chunk)
+	}
+
+	return chunks, nil
+}
+
+// GetConn returns the underlying SQL database connection
+func (db *DB) GetConn() *sql.DB {
+	return db.conn
 }
 
 // Close closes the database connection

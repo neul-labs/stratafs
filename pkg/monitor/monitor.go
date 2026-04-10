@@ -46,7 +46,7 @@ func NewMonitor(cfg *config.Config) (*Monitor, error) {
 	}
 	
 	// Initialize embedder
-	embedder, err := embeddings.NewEmbedder()
+	embedder, err := embeddings.NewEmbedder(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize embedder: %w", err)
 	}

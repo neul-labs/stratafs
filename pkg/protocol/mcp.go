@@ -8,19 +8,22 @@ import (
 	"sync"
 
 	"agentfs/pkg/database"
+	"agentfs/pkg/search"
 )
 
 // ModelContextProtocol represents the MCP server
 type ModelContextProtocol struct {
-	databases map[string]*database.DB
-	server    *http.Server
-	wg        sync.WaitGroup
+	databases    map[string]*database.DB
+	searchEngine *search.Engine
+	server       *http.Server
+	wg           sync.WaitGroup
 }
 
 // NewModelContextProtocol creates a new MCP server
-func NewModelContextProtocol(databases map[string]*database.DB) *ModelContextProtocol {
+func NewModelContextProtocol(databases map[string]*database.DB, searchEngine *search.Engine) *ModelContextProtocol {
 	return &ModelContextProtocol{
-		databases: databases,
+		databases:    databases,
+		searchEngine: searchEngine,
 	}
 }
 
@@ -30,7 +33,8 @@ func (mcp *ModelContextProtocol) Start() error {
 	
 	// Register MCP endpoints
 	mux.HandleFunc("/mcp", mcp.handleMCP)
-	mux.HandleFunc("/mcp/search", mcp.handleSearch)
+	mux.HandleFunc("/mcp/search", mcp.handleUnifiedSearch)
+	mux.HandleFunc("/mcp/documents/", mcp.handleDocuments)
 	mux.HandleFunc("/mcp/resources", mcp.handleResources)
 	
 	// Create server
@@ -175,4 +179,99 @@ type SearchResult struct {
 	File    string  `json:"file"`
 	Content string  `json:"content"`
 	Score   float64 `json:"score"`
+}
+
+// handleUnifiedSearch handles unified search requests via MCP (replacing both basic and hybrid search)
+func (mcp *ModelContextProtocol) handleUnifiedSearch(w http.ResponseWriter, r *http.Request) {
+	if mcp.searchEngine == nil {
+		// Fallback to basic search if search engine not available
+		mcp.handleSearch(w, r)
+		return
+	}
+
+	// Parse search request
+	var req search.SearchRequest
+	if r.Method == "POST" {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+			return
+		}
+	} else {
+		// Parse query parameters for simple requests
+		req = search.SearchRequest{
+			Query:           r.URL.Query().Get("q"),
+			Mode:            search.SearchMode(r.URL.Query().Get("mode")),
+			Limit:           10,
+			Offset:          0,
+			IncludeContent:  true,
+			IncludeMetadata: true,
+		}
+		if req.Mode == "" {
+			req.Mode = search.SearchModeHybrid
+		}
+	}
+
+	// Perform unified search
+	response, err := mcp.searchEngine.Search(&req)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Search failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Return MCP-compatible response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"type":    "search_response",
+		"results": response.Results,
+		"total":   response.Total,
+		"query":   response.Query,
+		"mode":    response.Mode,
+		"facets":  response.Facets,
+	})
+}
+
+// handleDocuments handles document retrieval requests via MCP
+func (mcp *ModelContextProtocol) handleDocuments(w http.ResponseWriter, r *http.Request) {
+	if mcp.searchEngine == nil {
+		http.Error(w, "Search engine not available", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Parse document request from query parameters
+	req := search.DocumentRequest{
+		IncludeChunks:   r.URL.Query().Get("include_chunks") == "true",
+		IncludeMetadata: r.URL.Query().Get("include_metadata") == "true",
+		Format:          r.URL.Query().Get("format"),
+	}
+
+	if req.Format == "" {
+		req.Format = "json"
+	}
+
+	// Extract file path from URL path
+	path := r.URL.Path
+	if len(path) > len("/mcp/documents/") {
+		req.FilePath = path[len("/mcp/documents/"):]
+	}
+
+	if req.FilePath == "" {
+		http.Error(w, "Missing file path", http.StatusBadRequest)
+		return
+	}
+
+	// Get document
+	response, err := mcp.searchEngine.GetDocument(&req)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Document not found: %v", err), http.StatusNotFound)
+		return
+	}
+
+	// Return MCP-compatible response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"type":     "document_response",
+		"file":     response.File,
+		"chunks":   response.Chunks,
+		"metadata": response.Metadata,
+	})
 }

@@ -2,116 +2,185 @@ package embeddings
 
 import (
 	"fmt"
-	"runtime"
+	"os"
 
+	"agentfs/pkg/config"
 	"github.com/anush008/fastembed-go"
 )
 
-// Embedder handles text embedding generation
+// Embedder provides text embedding functionality using FastEmbed
 type Embedder struct {
-	model *fastembed.FlagEmbedding
+	model     *fastembed.FlagEmbedding
+	dimension int
+	config    *config.Config
 }
 
-// NewEmbedder creates a new embedder with the default model
-func NewEmbedder() (*Embedder, error) {
-	// Try to create the embedder with ONNX runtime
-	embedder, err := newEmbedderWithONNX()
-	if err != nil {
-		// If ONNX fails, try fallback options
-		fmt.Printf("Warning: ONNX runtime not available: %v\n", err)
-		fmt.Println("Falling back to pure Go implementation...")
-		return newEmbedderFallback()
+// NewEmbedder creates a new embedder instance with the given configuration
+func NewEmbedder(cfg *config.Config) (*Embedder, error) {
+	// Map our config model to fastembed model
+	var fastembedModel fastembed.EmbeddingModel
+	var expectedDimension int
+
+	switch cfg.FastEmbedModel {
+	case config.FastEmbedBGEBaseEN:
+		fastembedModel = fastembed.BGEBaseEN
+		expectedDimension = 768
+	case config.FastEmbedBGEBaseENV15:
+		fastembedModel = fastembed.BGEBaseENV15
+		expectedDimension = 768
+	case config.FastEmbedBGESmallEN:
+		fastembedModel = fastembed.BGESmallEN
+		expectedDimension = 384
+	case config.FastEmbedBGESmallENV15:
+		fastembedModel = fastembed.BGESmallENV15
+		expectedDimension = 384
+	case config.FastEmbedAllMiniLML6V2:
+		fastembedModel = fastembed.AllMiniLML6V2
+		expectedDimension = 384
+	default:
+		return nil, fmt.Errorf("unsupported FastEmbed model: %s", cfg.FastEmbedModel)
 	}
-	
-	return embedder, nil
-}
 
-// newEmbedderWithONNX creates an embedder using ONNX runtime
-func newEmbedderWithONNX() (*Embedder, error) {
-	// Using all-MiniLM-L6-v2 model which is a good balance between speed and quality
+	// Create cache directory if it doesn't exist
+	if err := os.MkdirAll(cfg.FastEmbedCacheDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create cache directory: %w", err)
+	}
+
+	// Initialize FastEmbed model
 	options := &fastembed.InitOptions{
-		Model: fastembed.AllMiniLML6V2,
+		Model:     fastembedModel,
+		CacheDir:  cfg.FastEmbedCacheDir,
+		MaxLength: 512, // Standard max length for most models
 	}
-	
+
 	model, err := fastembed.NewFlagEmbedding(options)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create embedding model: %w", err)
+		return nil, fmt.Errorf("failed to initialize FastEmbed model %s: %w", cfg.FastEmbedModel, err)
 	}
-	
+
+	// Update config with detected dimension
+	cfg.EmbeddingDimension = expectedDimension
+
+	fmt.Printf("FastEmbed model %s initialized successfully (dimension: %d)\n", cfg.FastEmbedModel, expectedDimension)
+
 	return &Embedder{
-		model: model,
+		model:     model,
+		dimension: expectedDimension,
+		config:    cfg,
 	}, nil
 }
 
-// newEmbedderFallback creates an embedder using a fallback method
-func newEmbedderFallback() (*Embedder, error) {
-	// For macOS, we might need to provide the library path
-	// or use a different approach
-	fmt.Println("Platform:", runtime.GOOS, runtime.GOARCH)
-	
-	// Return a mock embedder for now
-	return &Embedder{
-		model: nil,
-	}, nil
-}
+// Removed backward compatibility function - use NewEmbedder(cfg) directly
 
-// Embed generates embeddings for a text
+// Embed generates embeddings for a single text
 func (e *Embedder) Embed(text string) ([]float32, error) {
-	// If we have a real model, use it
-	if e.model != nil {
-		embedding, err := e.model.QueryEmbed(text)
-		if err != nil {
-			return nil, fmt.Errorf("failed to embed text: %w", err)
-		}
-		return embedding, nil
+	if text == "" {
+		// Return zero vector for empty text
+		return make([]float32, e.dimension), nil
 	}
-	
-	// Fallback: return a simple mock embedding
-	// In a real implementation, you might want to use a different library
-	// or download the ONNX runtime
-	return e.mockEmbed(text), nil
+
+	// Use PassageEmbed for content embedding (better for documents)
+	embeddings, err := e.model.PassageEmbed([]string{text}, 1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate embedding: %w", err)
+	}
+
+	if len(embeddings) == 0 {
+		return nil, fmt.Errorf("no embeddings generated")
+	}
+
+	embedding := embeddings[0]
+	if len(embedding) != e.dimension {
+		return nil, fmt.Errorf("unexpected embedding dimension: got %d, expected %d", len(embedding), e.dimension)
+	}
+
+	return embedding, nil
 }
 
-// EmbedBatch generates embeddings for multiple texts
-func (e *Embedder) EmbedBatch(texts []string) ([][]float32, error) {
-	// If we have a real model, use it
-	if e.model != nil {
-		embeddings, err := e.model.Embed(texts, 32) // Using batch size of 32
-		if err != nil {
-			return nil, fmt.Errorf("failed to embed texts: %w", err)
+// EmbedBatch generates embeddings for multiple texts efficiently
+func (e *Embedder) EmbedBatch(texts []string, batchSize int) ([][]float32, error) {
+	if len(texts) == 0 {
+		return nil, nil
+	}
+
+	if batchSize <= 0 {
+		batchSize = 25 // Default batch size
+	}
+
+	// Use PassageEmbed for batch processing
+	embeddings, err := e.model.PassageEmbed(texts, batchSize)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate batch embeddings: %w", err)
+	}
+
+	if len(embeddings) != len(texts) {
+		return nil, fmt.Errorf("embedding count mismatch: got %d, expected %d", len(embeddings), len(texts))
+	}
+
+	// Validate dimensions
+	for i, embedding := range embeddings {
+		if len(embedding) != e.dimension {
+			return nil, fmt.Errorf("unexpected embedding dimension for text %d: got %d, expected %d",
+				i, len(embedding), e.dimension)
 		}
-		return embeddings, nil
 	}
-	
-	// Fallback: return mock embeddings
-	results := make([][]float32, len(texts))
-	for i, text := range texts {
-		results[i] = e.mockEmbed(text)
-	}
-	return results, nil
+
+	return embeddings, nil
 }
 
-// mockEmbed generates a simple mock embedding based on text length
-func (e *Embedder) mockEmbed(text string) []float32 {
-	// This is a very simple mock - in reality, you'd want proper embeddings
-	// For now, we'll generate a fixed-size vector based on text properties
-	const embeddingSize = 384 // Size of all-MiniLM-L6-v2 embeddings
-	
-	embedding := make([]float32, embeddingSize)
-	textLen := float32(len(text))
-	
-	// Simple deterministic "embedding" based on text length
-	for i := 0; i < embeddingSize; i++ {
-		embedding[i] = (textLen + float32(i)) / float32(embeddingSize)
+// EmbedQuery generates embeddings specifically for query text (better for search queries)
+func (e *Embedder) EmbedQuery(query string) ([]float32, error) {
+	if query == "" {
+		return make([]float32, e.dimension), nil
 	}
-	
-	return embedding
+
+	embedding, err := e.model.QueryEmbed(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
+	}
+
+	if len(embedding) != e.dimension {
+		return nil, fmt.Errorf("unexpected query embedding dimension: got %d, expected %d", len(embedding), e.dimension)
+	}
+
+	return embedding, nil
+}
+
+// GetDimension returns the embedding dimension
+func (e *Embedder) GetDimension() int {
+	return e.dimension
+}
+
+// GetModelName returns the current model name
+func (e *Embedder) GetModelName() string {
+	return string(e.config.FastEmbedModel)
 }
 
 // Close releases resources used by the embedder
 func (e *Embedder) Close() error {
 	if e.model != nil {
-		return e.model.Destroy()
+		e.model.Destroy()
+		e.model = nil
 	}
 	return nil
+}
+
+// GetAvailableModels returns a list of available FastEmbed models with their dimensions
+func GetAvailableModels() map[config.FastEmbedModel]int {
+	return map[config.FastEmbedModel]int{
+		config.FastEmbedBGEBaseEN:     768,
+		config.FastEmbedBGEBaseENV15:  768,
+		config.FastEmbedBGESmallEN:    384,
+		config.FastEmbedBGESmallENV15: 384,
+		config.FastEmbedAllMiniLML6V2: 384,
+	}
+}
+
+// ValidateModel checks if a model name is valid and returns its dimension
+func ValidateModel(model config.FastEmbedModel) (int, error) {
+	models := GetAvailableModels()
+	if dimension, exists := models[model]; exists {
+		return dimension, nil
+	}
+	return 0, fmt.Errorf("unsupported model: %s", model)
 }
