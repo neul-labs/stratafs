@@ -3,12 +3,8 @@ package parsers
 import (
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
-
-	"github.com/ledongthuc/pdf"
 )
 
 // Parser interface defines the contract for file parsers
@@ -54,62 +50,6 @@ func (tp *TextParser) Supports(extension string) bool {
 	return false
 }
 
-// PDFParser handles PDF document parsing
-type PDFParser struct {
-	filePath string
-}
-
-// NewPDFParser creates a PDF parser with the file path
-func NewPDFParser(filePath string) *PDFParser {
-	return &PDFParser{filePath: filePath}
-}
-
-// Parse extracts text content from PDF files
-func (pp *PDFParser) Parse(content io.Reader) (string, error) {
-	// For PDF parsing, we need direct file access
-	file, err := os.Open(pp.filePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to open PDF file: %w", err)
-	}
-	defer file.Close()
-
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return "", fmt.Errorf("failed to stat PDF file: %w", err)
-	}
-
-	reader, err := pdf.NewReader(file, fileInfo.Size())
-	if err != nil {
-		return "", fmt.Errorf("failed to create PDF reader: %w", err)
-	}
-
-	var result strings.Builder
-	numPages := reader.NumPage()
-
-	for i := 1; i <= numPages; i++ {
-		page := reader.Page(i)
-		if page.V.IsNull() {
-			continue
-		}
-
-		text, err := page.GetPlainText(nil)
-		if err != nil {
-			// Continue with other pages if one page fails
-			continue
-		}
-
-		result.WriteString(fmt.Sprintf("\n--- Page %d ---\n", i))
-		result.WriteString(text)
-		result.WriteString("\n")
-	}
-
-	return result.String(), nil
-}
-
-// Supports checks if this parser can handle PDF files
-func (pp *PDFParser) Supports(extension string) bool {
-	return extension == ".pdf"
-}
 
 // HTMLParser handles HTML document parsing
 type HTMLParser struct{}
@@ -168,32 +108,10 @@ func isTextContent(data []byte) bool {
 	return ratio > 0.95 // 95% of characters should be printable
 }
 
-// GetParser returns the appropriate parser for a given file
+// GetParser returns the appropriate parser for a given file (deprecated - use registry)
 func GetParser(filename string) Parser {
-	extension := strings.ToLower(filepath.Ext(filename))
-
-	// Check if the file type is supported first
-	if !shouldParseFile(extension) {
-		return nil // Return nil for unsupported files
-	}
-
-	// Use specific parsers for different file types
-	switch extension {
-	case ".pdf":
-		return NewPDFParser(filename)
-	case ".html", ".htm":
-		return &HTMLParser{}
-	case ".json", ".yaml", ".yml", ".xml":
-		return &TextParser{} // These are structured text files
-	default:
-		// Use advanced parser for code files
-		if isCodeFile(extension) {
-			return NewAdvancedCodeParser(extension)
-		}
-
-		// Use text parser for text-based files
-		return &TextParser{}
-	}
+	// Use the new registry system
+	return GlobalRegistry.GetParser(filename)
 }
 
 // shouldParseFile determines if a file should be parsed based on its extension
@@ -211,7 +129,10 @@ func shouldParseFile(extension string) bool {
 		".html", ".htm", ".xml", ".json", ".yaml", ".yml", ".toml",
 
 		// Documents
-		".pdf",
+		".pdf", ".docx", ".pptx", ".rtf",
+
+		// Spreadsheets
+		".xlsx", ".ods",
 	}
 
 	for _, ext := range supportedExts {
@@ -237,8 +158,8 @@ func shouldParseFile(extension string) bool {
 		// Archives
 		".zip", ".tar", ".gz", ".bz2", ".xz", ".7z", ".rar",
 
-		// Other binary formats
-		".docx", ".xlsx", ".pptx", ".pdf", // Note: PDF is supported above
+		// Other binary formats (that we don't support)
+		".db", ".sqlite",
 	}
 
 	for _, ext := range unsupportedExts {
