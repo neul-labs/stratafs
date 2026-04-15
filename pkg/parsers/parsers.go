@@ -114,6 +114,10 @@ func GetParser(filename string) Parser {
 	return GlobalRegistry.GetParser(filename)
 }
 
+// Note: Legacy DOC format (.doc) is not supported due to complexity of the binary format.
+// Modern DOCX format is supported via ZIP-based XML parsing.
+// For DOC support, external tools like 'wv' or 'antiword' would be required.
+
 // shouldParseFile determines if a file should be parsed based on its extension
 func shouldParseFile(extension string) bool {
 	// Supported text-based files
@@ -132,7 +136,7 @@ func shouldParseFile(extension string) bool {
 		".pdf", ".docx", ".pptx", ".rtf",
 
 		// Spreadsheets
-		".xlsx", ".ods",
+		".xlsx", ".xls", ".ods",
 	}
 
 	for _, ext := range supportedExts {

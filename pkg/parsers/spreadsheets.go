@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/extrame/xls"
 )
 
 // SpreadsheetParser handles Microsoft Excel formats (XLSX, XLS)
@@ -46,6 +48,8 @@ func (sp *SpreadsheetParser) Parse(content io.Reader) (string, error) {
 	switch ext {
 	case ".xlsx":
 		return sp.parseXLSX(content)
+	case ".xls":
+		return sp.parseXLS(content)
 	case ".ods":
 		return sp.parseODS(content)
 	default:
@@ -96,6 +100,79 @@ func (sp *SpreadsheetParser) parseXLSX(content io.Reader) (string, error) {
 	}
 
 	result.WriteString(fmt.Sprintf("\n// Workbook Summary: %d worksheets\n", worksheetCount))
+	return result.String(), nil
+}
+
+// parseXLS extracts data from legacy XLS files
+func (sp *SpreadsheetParser) parseXLS(content io.Reader) (string, error) {
+	// XLS library requires file path access, not io.Reader
+	xlFile, err := xls.Open(sp.filePath, "utf-8")
+	if err != nil {
+		return "", fmt.Errorf("failed to open XLS file: %w", err)
+	}
+
+	var result strings.Builder
+	result.WriteString(fmt.Sprintf("// Spreadsheet Type: %s\n", sp.spreadsheetType))
+
+	// Get number of worksheets
+	numSheets := xlFile.NumSheets()
+	result.WriteString(fmt.Sprintf("// Total Worksheets: %d\n", numSheets))
+
+	// Parse each worksheet
+	for sheetIndex := 0; sheetIndex < numSheets; sheetIndex++ {
+		sheet := xlFile.GetSheet(sheetIndex)
+		if sheet == nil {
+			result.WriteString(fmt.Sprintf("\n// Sheet %d: [Unable to access]\n", sheetIndex+1))
+			continue
+		}
+
+		result.WriteString(fmt.Sprintf("\n// Sheet %d:\n", sheetIndex+1))
+
+		// Track if sheet has any content
+		hasContent := false
+
+		// Parse rows (up to MaxRow)
+		maxRows := int(sheet.MaxRow)
+		if maxRows > 100 { // Limit for performance
+			maxRows = 100
+		}
+
+		for rowIndex := 0; rowIndex <= maxRows; rowIndex++ {
+			row := sheet.Row(rowIndex)
+			if row == nil {
+				continue
+			}
+
+			// Extract non-empty cells from this row
+			var cellValues []string
+			hasRowContent := false
+
+			// Check up to a reasonable number of columns
+			for colIndex := 0; colIndex < 50; colIndex++ {
+				cell := row.Col(colIndex)
+				if cell != "" {
+					cellValues = append(cellValues, strings.TrimSpace(cell))
+					hasRowContent = true
+				}
+			}
+
+			if hasRowContent {
+				result.WriteString(fmt.Sprintf("Row %d: %s\n", rowIndex+1, strings.Join(cellValues, " | ")))
+				hasContent = true
+			}
+		}
+
+		if !hasContent {
+			result.WriteString("[No readable content]\n")
+		}
+
+		// Add truncation notice if needed
+		if int(sheet.MaxRow) > 100 {
+			result.WriteString(fmt.Sprintf("... (sheet has %d total rows, showing first 100)\n", int(sheet.MaxRow)+1))
+		}
+	}
+
+	result.WriteString(fmt.Sprintf("\n// Workbook Summary: %d worksheets\n", numSheets))
 	return result.String(), nil
 }
 
@@ -298,7 +375,7 @@ func (sp *SpreadsheetParser) extractTextFromXML(f *zip.File, textTag string) (st
 
 // Supports checks if this parser can handle the given file extension
 func (sp *SpreadsheetParser) Supports(extension string) bool {
-	supported := []string{".xlsx", ".ods"}
+	supported := []string{".xlsx", ".xls", ".ods"}
 	for _, ext := range supported {
 		if ext == extension {
 			return true
@@ -310,8 +387,21 @@ func (sp *SpreadsheetParser) Supports(extension string) bool {
 // GetMetadata extracts metadata from spreadsheet files
 func (sp *SpreadsheetParser) GetMetadata() (map[string]string, error) {
 	ext := strings.ToLower(filepath.Ext(sp.filePath))
+	metadata := make(map[string]string)
+	metadata["type"] = sp.spreadsheetType
+
+	if ext == ".xls" {
+		// Handle XLS metadata extraction
+		xlFile, err := xls.Open(sp.filePath, "utf-8")
+		if err != nil {
+			return metadata, nil // Return basic metadata on error
+		}
+		metadata["worksheets"] = fmt.Sprintf("%d", xlFile.NumSheets())
+		return metadata, nil
+	}
+
 	if ext != ".xlsx" {
-		return map[string]string{"type": sp.spreadsheetType}, nil
+		return metadata, nil
 	}
 
 	r, err := zip.OpenReader(sp.filePath)
@@ -319,9 +409,6 @@ func (sp *SpreadsheetParser) GetMetadata() (map[string]string, error) {
 		return nil, fmt.Errorf("failed to open spreadsheet: %w", err)
 	}
 	defer r.Close()
-
-	metadata := make(map[string]string)
-	metadata["type"] = sp.spreadsheetType
 
 	// Count worksheets
 	worksheetCount := 0

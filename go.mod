@@ -17,6 +17,8 @@ require (
 
 require (
 	github.com/emirpasic/gods v1.18.1 // indirect
+	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
+	github.com/extrame/xls v0.0.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/rivo/uniseg v0.4.6 // indirect

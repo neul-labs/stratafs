@@ -16,8 +16,8 @@ func TestSpreadsheetParserSupports(t *testing.T) {
 		supported bool
 	}{
 		{".xlsx", true},
+		{".xls", true},
 		{".ods", true},
-		{".xls", false}, // Currently not implemented
 		{".csv", false}, // Handled by CSVAdvancedParser
 		{".txt", false},
 		{".pdf", false},

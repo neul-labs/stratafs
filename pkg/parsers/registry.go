@@ -78,6 +78,7 @@ func (r *ParserRegistry) RegisterDefaults() {
 
 	// Spreadsheets
 	r.RegisterParser(".xlsx", func(path string) Parser { return NewSpreadsheetParser(path) })
+	r.RegisterParser(".xls", func(path string) Parser { return NewSpreadsheetParser(path) })
 	r.RegisterParser(".ods", func(path string) Parser { return NewSpreadsheetParser(path) })
 	r.RegisterParser(".csv", func(path string) Parser { return NewCSVAdvancedParser(',') })
 	r.RegisterParser(".tsv", func(path string) Parser { return NewTSVParser() })
