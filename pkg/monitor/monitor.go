@@ -52,10 +52,12 @@ func NewMonitor(cfg *config.Config) (*Monitor, error) {
 	}
 	m.embedder = embedder
 	
-	// Initialize databases for each directory
-	for _, dir := range cfg.Directories {
-		if err := m.initializeDirectory(dir); err != nil {
-			return nil, fmt.Errorf("failed to initialize directory %s: %w", dir, err)
+	// Initialize databases for each enabled local source
+	for _, source := range cfg.GetEnabledSources() {
+		if source.Type == config.StorageTypeLocal {
+			if err := m.initializeDirectory(source.Path); err != nil {
+				return nil, fmt.Errorf("failed to initialize directory %s: %w", source.Path, err)
+			}
 		}
 	}
 	
@@ -83,13 +85,16 @@ func (m *Monitor) initializeDirectory(dir string) error {
 
 // Start begins monitoring file system changes
 func (m *Monitor) Start() error {
-	// Start monitoring each directory in a goroutine
-	for _, dir := range m.config.Directories {
-		m.wg.Add(1)
-		go func(d string) {
-			defer m.wg.Done()
-			m.watchDirectory(d)
-		}(dir)
+	// Start monitoring each enabled local source in a goroutine
+	for _, source := range m.config.GetEnabledSources() {
+		if source.Type == config.StorageTypeLocal {
+			m.wg.Add(1)
+			go func(s config.StorageSource) {
+				defer m.wg.Done()
+				d := s.Path
+				m.watchDirectory(d)
+			}(source)
+		}
 	}
 	
 	// Start compaction service

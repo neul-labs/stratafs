@@ -21,7 +21,7 @@ func NewEmbedder(cfg *config.Config) (*Embedder, error) {
 	var fastembedModel fastembed.EmbeddingModel
 	var expectedDimension int
 
-	switch cfg.FastEmbedModel {
+	switch cfg.Embedding.Model {
 	case config.FastEmbedBGEBaseEN:
 		fastembedModel = fastembed.BGEBaseEN
 		expectedDimension = 768
@@ -38,30 +38,30 @@ func NewEmbedder(cfg *config.Config) (*Embedder, error) {
 		fastembedModel = fastembed.AllMiniLML6V2
 		expectedDimension = 384
 	default:
-		return nil, fmt.Errorf("unsupported FastEmbed model: %s", cfg.FastEmbedModel)
+		return nil, fmt.Errorf("unsupported FastEmbed model: %s", cfg.Embedding.Model)
 	}
 
 	// Create cache directory if it doesn't exist
-	if err := os.MkdirAll(cfg.FastEmbedCacheDir, 0755); err != nil {
+	if err := os.MkdirAll(cfg.Embedding.CacheDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
 	// Initialize FastEmbed model
 	options := &fastembed.InitOptions{
 		Model:     fastembedModel,
-		CacheDir:  cfg.FastEmbedCacheDir,
-		MaxLength: 512, // Standard max length for most models
+		CacheDir:  cfg.Embedding.CacheDir,
+		MaxLength: cfg.Embedding.ModelInfo.MaxTokens,
 	}
 
 	model, err := fastembed.NewFlagEmbedding(options)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize FastEmbed model %s: %w", cfg.FastEmbedModel, err)
+		return nil, fmt.Errorf("failed to initialize FastEmbed model %s: %w", cfg.Embedding.Model, err)
 	}
 
 	// Update config with detected dimension
-	cfg.EmbeddingDimension = expectedDimension
+	cfg.Embedding.Dimension = expectedDimension
 
-	fmt.Printf("FastEmbed model %s initialized successfully (dimension: %d)\n", cfg.FastEmbedModel, expectedDimension)
+	fmt.Printf("FastEmbed model %s initialized successfully (dimension: %d)\n", cfg.Embedding.ModelInfo.Name, expectedDimension)
 
 	return &Embedder{
 		model:     model,
@@ -153,7 +153,7 @@ func (e *Embedder) GetDimension() int {
 
 // GetModelName returns the current model name
 func (e *Embedder) GetModelName() string {
-	return string(e.config.FastEmbedModel)
+	return e.config.Embedding.ModelInfo.Name
 }
 
 // Close releases resources used by the embedder

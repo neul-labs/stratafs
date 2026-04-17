@@ -1,8 +1,11 @@
 package database
 
 import (
+	"bytes"
+	"compress/gzip"
 	"database/sql"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 	"unsafe"
@@ -16,17 +19,21 @@ type DB struct {
 	conn *sql.DB
 }
 
+// compressionThreshold is the minimum content size to compress (avoid overhead for small chunks)
+const compressionThreshold = 512
+
 // FileChunk represents a chunk of a file with its metadata
 type FileChunk struct {
-	ID        int64      `json:"id"`
-	FileID    int64      `json:"file_id"`
-	Content   string     `json:"content"`
-	Embedding []float32  `json:"embedding"`
-	Offset    int        `json:"offset"`
-	Length    int        `json:"length"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	ID           int64      `json:"id"`
+	FileID       int64      `json:"file_id"`
+	Content      string     `json:"content"`
+	IsCompressed bool       `json:"is_compressed"`
+	Embedding    []float32  `json:"embedding"`
+	Offset       int        `json:"offset"`
+	Length       int        `json:"length"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
 }
 
 // File represents a file with its metadata
@@ -38,6 +45,50 @@ type File struct {
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+}
+
+// compressContent compresses content if it's above the threshold
+func compressContent(content string) ([]byte, bool, error) {
+	if len(content) < compressionThreshold {
+		return nil, false, nil
+	}
+
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	if _, err := gz.Write([]byte(content)); err != nil {
+		return nil, false, err
+	}
+	if err := gz.Close(); err != nil {
+		return nil, false, err
+	}
+
+	compressed := buf.Bytes()
+	// Only use compression if it provides significant savings
+	if len(compressed) < len(content)*9/10 { // 10% savings minimum
+		return compressed, true, nil
+	}
+
+	return nil, false, nil
+}
+
+// decompressContent decompresses content if it was compressed
+func decompressContent(compressed []byte) (string, error) {
+	if len(compressed) == 0 {
+		return "", nil
+	}
+
+	gz, err := gzip.NewReader(bytes.NewReader(compressed))
+	if err != nil {
+		return "", err
+	}
+	defer gz.Close()
+
+	data, err := io.ReadAll(gz)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
 }
 
 // NewDB creates a new database connection and initializes the schema
@@ -82,6 +133,8 @@ func (db *DB) initSchema() error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			file_id INTEGER NOT NULL,
 			content TEXT NOT NULL,
+			content_compressed BLOB,
+			is_compressed BOOLEAN DEFAULT FALSE,
 			embedding BLOB,
 			offset INTEGER NOT NULL,
 			length INTEGER NOT NULL,
@@ -103,13 +156,45 @@ func (db *DB) initSchema() error {
 			return fmt.Errorf("failed to execute query: %s, error: %w", query, err)
 		}
 	}
-	
+
+	// Run database migrations for compression support
+	if err := db.migrateSchema(); err != nil {
+		return fmt.Errorf("failed to migrate schema: %w", err)
+	}
+
 	// Try to enable full-text search
 	if err := db.enableFTS(); err != nil {
 		fmt.Printf("Warning: Failed to enable FTS: %v\n", err)
 		fmt.Println("Falling back to simple text search")
 	}
-	
+
+	return nil
+}
+
+// migrateSchema applies database migrations for new features
+func (db *DB) migrateSchema() error {
+	// Check if compression columns exist
+	var count int
+	err := db.conn.QueryRow("SELECT COUNT(*) FROM pragma_table_info('file_chunks') WHERE name IN ('content_compressed', 'is_compressed')").Scan(&count)
+	if err != nil {
+		return fmt.Errorf("failed to check schema: %w", err)
+	}
+
+	// Add compression columns if they don't exist
+	if count == 0 {
+		migrations := []string{
+			"ALTER TABLE file_chunks ADD COLUMN content_compressed BLOB",
+			"ALTER TABLE file_chunks ADD COLUMN is_compressed BOOLEAN DEFAULT FALSE",
+		}
+
+		for _, migration := range migrations {
+			if _, err := db.conn.Exec(migration); err != nil {
+				return fmt.Errorf("failed to execute migration: %s, error: %w", migration, err)
+			}
+		}
+		fmt.Println("Applied compression schema migration")
+	}
+
 	return nil
 }
 
@@ -222,31 +307,53 @@ func (db *DB) UpsertChunk(fileID int64, content string, embedding []float32, off
 			copy(embeddingBytes[i*4:(i+1)*4], b[:])
 		}
 	}
-	
+
+	// Try to compress content
+	compressedData, isCompressed, err := compressContent(content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compress content: %w", err)
+	}
+
 	// First try to update existing chunk
-	result, err := db.conn.Exec(`
-		UPDATE file_chunks 
-		SET content=?, embedding=?, length=?, updated_at=CURRENT_TIMESTAMP, deleted_at=NULL
-		WHERE file_id=? AND offset=?`,
-		content, embeddingBytes, length, fileID, offset)
-	
+	var result sql.Result
+	if isCompressed {
+		result, err = db.conn.Exec(`
+			UPDATE file_chunks
+			SET content=?, content_compressed=?, is_compressed=?, embedding=?, length=?, updated_at=CURRENT_TIMESTAMP, deleted_at=NULL
+			WHERE file_id=? AND offset=?`,
+			"", compressedData, true, embeddingBytes, length, fileID, offset)
+	} else {
+		result, err = db.conn.Exec(`
+			UPDATE file_chunks
+			SET content=?, content_compressed=?, is_compressed=?, embedding=?, length=?, updated_at=CURRENT_TIMESTAMP, deleted_at=NULL
+			WHERE file_id=? AND offset=?`,
+			content, nil, false, embeddingBytes, length, fileID, offset)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to update chunk: %w", err)
 	}
-	
+
 	// Check if we updated a row
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get rows affected: %w", err)
 	}
-	
+
 	// If we didn't update a row, insert a new one
 	if rowsAffected == 0 {
-		_, err := db.conn.Exec(`
-			INSERT INTO file_chunks (file_id, content, embedding, offset, length, updated_at)
-			VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-			fileID, content, embeddingBytes, offset, length)
-		
+		if isCompressed {
+			_, err = db.conn.Exec(`
+				INSERT INTO file_chunks (file_id, content, content_compressed, is_compressed, embedding, offset, length, updated_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+				fileID, "", compressedData, true, embeddingBytes, offset, length)
+		} else {
+			_, err = db.conn.Exec(`
+				INSERT INTO file_chunks (file_id, content, content_compressed, is_compressed, embedding, offset, length, updated_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+				fileID, content, nil, false, embeddingBytes, offset, length)
+		}
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to insert chunk: %w", err)
 		}
@@ -256,17 +363,27 @@ func (db *DB) UpsertChunk(fileID int64, content string, embedding []float32, off
 	var chunk FileChunk
 	var deletedAt *string
 	var embeddingBytesResult []byte
-	
+	var compressedContent []byte
+
 	err = db.conn.QueryRow(`
-		SELECT id, file_id, content, embedding, offset, length, created_at, updated_at, deleted_at
+		SELECT id, file_id, content, content_compressed, is_compressed, embedding, offset, length, created_at, updated_at, deleted_at
 		FROM file_chunks
 		WHERE file_id=? AND offset=?`,
 		fileID, offset).Scan(
-		&chunk.ID, &chunk.FileID, &chunk.Content, &embeddingBytesResult,
+		&chunk.ID, &chunk.FileID, &chunk.Content, &compressedContent, &chunk.IsCompressed, &embeddingBytesResult,
 		&chunk.Offset, &chunk.Length, &chunk.CreatedAt, &chunk.UpdatedAt, &deletedAt)
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve chunk: %w", err)
+	}
+
+	// Decompress content if needed
+	if chunk.IsCompressed && len(compressedContent) > 0 {
+		decompressed, err := decompressContent(compressedContent)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decompress content: %w", err)
+		}
+		chunk.Content = decompressed
 	}
 	
 	// Convert embedding bytes back to float32 slice
@@ -614,4 +731,215 @@ func (db *DB) GetConn() *sql.DB {
 // Close closes the database connection
 func (db *DB) Close() error {
 	return db.conn.Close()
+}
+
+// MaintenanceOptions configures database maintenance operations
+type MaintenanceOptions struct {
+	CleanupDeleted   bool // Remove soft-deleted records older than threshold
+	CompactDatabase  bool // Run VACUUM to reclaim space
+	ReindexTables    bool // Rebuild indexes for optimal performance
+	DeletedThreshold time.Duration // Age threshold for cleaning up deleted records
+}
+
+// DefaultMaintenanceOptions returns sensible defaults for maintenance
+func DefaultMaintenanceOptions() MaintenanceOptions {
+	return MaintenanceOptions{
+		CleanupDeleted:   true,
+		CompactDatabase:  true,
+		ReindexTables:    true,
+		DeletedThreshold: 7 * 24 * time.Hour, // 7 days
+	}
+}
+
+// PerformMaintenance runs database maintenance operations
+func (db *DB) PerformMaintenance(opts MaintenanceOptions) (*MaintenanceStats, error) {
+	stats := &MaintenanceStats{
+		StartTime: time.Now(),
+	}
+
+	// Clean up soft-deleted records
+	if opts.CleanupDeleted {
+		deletedFiles, deletedChunks, err := db.cleanupDeleted(opts.DeletedThreshold)
+		if err != nil {
+			return stats, fmt.Errorf("failed to cleanup deleted records: %w", err)
+		}
+		stats.DeletedFiles = deletedFiles
+		stats.DeletedChunks = deletedChunks
+	}
+
+	// Compact database to reclaim space
+	if opts.CompactDatabase {
+		sizeBeforeBytes, sizeAfterBytes, err := db.compactDatabase()
+		if err != nil {
+			return stats, fmt.Errorf("failed to compact database: %w", err)
+		}
+		stats.SizeBeforeBytes = sizeBeforeBytes
+		stats.SizeAfterBytes = sizeAfterBytes
+	}
+
+	// Reindex tables for performance
+	if opts.ReindexTables {
+		if err := db.reindexTables(); err != nil {
+			return stats, fmt.Errorf("failed to reindex tables: %w", err)
+		}
+		stats.ReindexedTables = true
+	}
+
+	stats.EndTime = time.Now()
+	stats.Duration = stats.EndTime.Sub(stats.StartTime)
+
+	return stats, nil
+}
+
+// MaintenanceStats contains statistics from maintenance operations
+type MaintenanceStats struct {
+	StartTime        time.Time
+	EndTime          time.Time
+	Duration         time.Duration
+	DeletedFiles     int64
+	DeletedChunks    int64
+	SizeBeforeBytes  int64
+	SizeAfterBytes   int64
+	ReindexedTables  bool
+}
+
+// SpaceSaved returns the amount of space saved in bytes
+func (ms *MaintenanceStats) SpaceSaved() int64 {
+	if ms.SizeBeforeBytes > ms.SizeAfterBytes {
+		return ms.SizeBeforeBytes - ms.SizeAfterBytes
+	}
+	return 0
+}
+
+// cleanupDeleted removes soft-deleted records older than the threshold
+func (db *DB) cleanupDeleted(threshold time.Duration) (int64, int64, error) {
+	cutoffTime := time.Now().Add(-threshold)
+
+	// Delete old chunks first (due to foreign key constraint)
+	chunkResult, err := db.conn.Exec(`
+		DELETE FROM file_chunks
+		WHERE deleted_at IS NOT NULL
+		AND deleted_at < ?`, cutoffTime)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to delete chunks: %w", err)
+	}
+
+	deletedChunks, _ := chunkResult.RowsAffected()
+
+	// Delete old files
+	fileResult, err := db.conn.Exec(`
+		DELETE FROM files
+		WHERE deleted_at IS NOT NULL
+		AND deleted_at < ?`, cutoffTime)
+	if err != nil {
+		return 0, deletedChunks, fmt.Errorf("failed to delete files: %w", err)
+	}
+
+	deletedFiles, _ := fileResult.RowsAffected()
+
+	return deletedFiles, deletedChunks, nil
+}
+
+// compactDatabase runs VACUUM to reclaim space and optimize storage
+func (db *DB) compactDatabase() (int64, int64, error) {
+	// Get database size before VACUUM
+	var sizeBefore int64
+	err := db.conn.QueryRow("SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()").Scan(&sizeBefore)
+	if err != nil {
+		sizeBefore = 0 // Continue even if we can't get size
+	}
+
+	// Run VACUUM to compact the database
+	_, err = db.conn.Exec("VACUUM")
+	if err != nil {
+		return sizeBefore, sizeBefore, fmt.Errorf("VACUUM failed: %w", err)
+	}
+
+	// Get database size after VACUUM
+	var sizeAfter int64
+	err = db.conn.QueryRow("SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()").Scan(&sizeAfter)
+	if err != nil {
+		sizeAfter = sizeBefore // Use before size as fallback
+	}
+
+	return sizeBefore, sizeAfter, nil
+}
+
+// reindexTables rebuilds all indexes for optimal performance
+func (db *DB) reindexTables() error {
+	// Get all index names
+	rows, err := db.conn.Query("SELECT name FROM sqlite_master WHERE type='index' AND sql IS NOT NULL")
+	if err != nil {
+		return fmt.Errorf("failed to get index list: %w", err)
+	}
+	defer rows.Close()
+
+	var indexes []string
+	for rows.Next() {
+		var indexName string
+		if err := rows.Scan(&indexName); err != nil {
+			continue
+		}
+		indexes = append(indexes, indexName)
+	}
+
+	// Reindex each index
+	for _, indexName := range indexes {
+		_, err := db.conn.Exec(fmt.Sprintf("REINDEX %s", indexName))
+		if err != nil {
+			return fmt.Errorf("failed to reindex %s: %w", indexName, err)
+		}
+	}
+
+	return nil
+}
+
+// GetDatabaseStats returns current database statistics
+func (db *DB) GetDatabaseStats() (*DatabaseStats, error) {
+	stats := &DatabaseStats{}
+
+	// Get table counts
+	err := db.conn.QueryRow("SELECT COUNT(*) FROM files WHERE deleted_at IS NULL").Scan(&stats.ActiveFiles)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count active files: %w", err)
+	}
+
+	err = db.conn.QueryRow("SELECT COUNT(*) FROM files WHERE deleted_at IS NOT NULL").Scan(&stats.DeletedFiles)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count deleted files: %w", err)
+	}
+
+	err = db.conn.QueryRow("SELECT COUNT(*) FROM file_chunks WHERE deleted_at IS NULL").Scan(&stats.ActiveChunks)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count active chunks: %w", err)
+	}
+
+	err = db.conn.QueryRow("SELECT COUNT(*) FROM file_chunks WHERE deleted_at IS NOT NULL").Scan(&stats.DeletedChunks)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count deleted chunks: %w", err)
+	}
+
+	// Get compression stats
+	err = db.conn.QueryRow("SELECT COUNT(*) FROM file_chunks WHERE is_compressed = true AND deleted_at IS NULL").Scan(&stats.CompressedChunks)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count compressed chunks: %w", err)
+	}
+
+	// Get database size
+	err = db.conn.QueryRow("SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()").Scan(&stats.DatabaseSizeBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database size: %w", err)
+	}
+
+	return stats, nil
+}
+
+// DatabaseStats contains current database statistics
+type DatabaseStats struct {
+	ActiveFiles        int64
+	DeletedFiles       int64
+	ActiveChunks       int64
+	DeletedChunks      int64
+	CompressedChunks   int64
+	DatabaseSizeBytes  int64
 }

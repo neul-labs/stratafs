@@ -29,7 +29,7 @@ type FileWatcher struct {
 	cancel     context.CancelFunc
 }
 
-// NewFileWatcher creates a new file watcher
+// NewFileWatcher creates a new file watcher for local sources
 func NewFileWatcher(cfg *config.Config, jobQueue *queue.Queue) (*FileWatcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -50,12 +50,44 @@ func NewFileWatcher(cfg *config.Config, jobQueue *queue.Queue) (*FileWatcher, er
 	return fw, nil
 }
 
-// Start begins watching the configured directories
+// getLocalSources returns all enabled local storage sources
+func (fw *FileWatcher) getLocalSources() []config.StorageSource {
+	var localSources []config.StorageSource
+	for _, source := range fw.config.GetEnabledSources() {
+		if source.Type == config.StorageTypeLocal {
+			localSources = append(localSources, source)
+		}
+	}
+	return localSources
+}
+
+// StartForSource begins watching a specific local storage source
+func (fw *FileWatcher) StartForSource(source config.StorageSource) error {
+	if source.Type != config.StorageTypeLocal {
+		return fmt.Errorf("file watcher only supports local storage sources")
+	}
+
+	if err := fw.addDirectoryRecursive(source.Path); err != nil {
+		return fmt.Errorf("failed to watch directory %s: %w", source.Path, err)
+	}
+
+	go fw.processEvents()
+	return nil
+}
+
+// Start begins watching all enabled local storage sources
 func (fw *FileWatcher) Start() error {
-	// Add all configured directories to the watcher
-	for _, dir := range fw.config.Directories {
-		if err := fw.addDirectoryRecursive(dir); err != nil {
-			log.Printf("Warning: Failed to watch directory %s: %v", dir, err)
+	// Get all enabled local sources
+	localSources := fw.getLocalSources()
+	if len(localSources) == 0 {
+		log.Println("No local storage sources found to watch")
+		return nil
+	}
+
+	// Add all local sources to the watcher
+	for _, source := range localSources {
+		if err := fw.addDirectoryRecursive(source.Path); err != nil {
+			log.Printf("Warning: Failed to watch directory %s: %v", source.Path, err)
 		}
 	}
 
@@ -240,7 +272,7 @@ func (fw *FileWatcher) queueFileJob(path string, jobType queue.JobType, priority
 
 // periodicScan performs periodic directory scans to catch missed events
 func (fw *FileWatcher) periodicScan() {
-	ticker := time.NewTicker(fw.config.ScanInterval)
+	ticker := time.NewTicker(fw.config.Worker.ScanInterval)
 	defer ticker.Stop()
 
 	for {
@@ -255,7 +287,8 @@ func (fw *FileWatcher) periodicScan() {
 
 // performScan scans all directories for changes
 func (fw *FileWatcher) performScan() {
-	for _, dir := range fw.config.Directories {
+	for _, source := range fw.getLocalSources() {
+		dir := source.Path
 		fw.scanDirectory(dir)
 	}
 }
@@ -300,7 +333,8 @@ func (fw *FileWatcher) isSupportedFile(path string) bool {
 // getDirectoryID returns the directory ID for a given file path
 func (fw *FileWatcher) getDirectoryID(filePath string) string {
 	// Find which configured directory contains this file
-	for _, dir := range fw.config.Directories {
+	for _, source := range fw.getLocalSources() {
+		dir := source.Path
 		if isSubPath(filePath, dir) {
 			return dir
 		}
