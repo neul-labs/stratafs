@@ -62,25 +62,61 @@ func (p *AgentFSProcessor) ProcessJob(ctx context.Context, job *Job) error {
 
 // processParseJob handles file parsing
 func (p *AgentFSProcessor) processParseJob(ctx context.Context, job *Job) error {
-	// Parse file info from payload
+	// Try to parse as remote file payload first, fall back to FileInfo
+	var payload map[string]interface{}
 	var fileInfo FileInfo
-	if err := json.Unmarshal([]byte(job.Payload), &fileInfo); err != nil {
-		return fmt.Errorf("failed to parse file info: %w", err)
-	}
+	var isRemoteFile bool
+	var shouldCleanup bool
 
-	// Check if file still exists and hasn't changed
-	stat, err := os.Stat(job.FilePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// File was deleted, mark it as deleted in database
-			return p.markFileDeleted(job.DirectoryID, job.FilePath)
+	if err := json.Unmarshal([]byte(job.Payload), &payload); err == nil {
+		// Check if this is a remote file job with cleanup flag
+		if cleanup, exists := payload["cleanup_after_processing"]; exists {
+			if cleanupBool, ok := cleanup.(bool); ok && cleanupBool {
+				isRemoteFile = true
+				shouldCleanup = true
+			}
 		}
-		return fmt.Errorf("failed to stat file: %w", err)
+
+		// For remote files, we don't have traditional FileInfo, so create minimal info
+		if isRemoteFile {
+			stat, err := os.Stat(job.FilePath)
+			if err != nil {
+				if os.IsNotExist(err) {
+					return fmt.Errorf("cached file not found: %s", job.FilePath)
+				}
+				return fmt.Errorf("failed to stat cached file: %w", err)
+			}
+			fileInfo = FileInfo{
+				Path:         job.FilePath,
+				Size:         stat.Size(),
+				ModifiedTime: stat.ModTime(),
+				Checksum:     "", // Will be calculated later if needed
+			}
+		}
 	}
 
-	// Check if file was modified since job was created
-	if stat.ModTime().After(fileInfo.ModifiedTime) {
-		return fmt.Errorf("file was modified after job creation, skipping")
+	// If not a remote file, parse as traditional FileInfo
+	if !isRemoteFile {
+		if err := json.Unmarshal([]byte(job.Payload), &fileInfo); err != nil {
+			return fmt.Errorf("failed to parse file info: %w", err)
+		}
+	}
+
+	// Check if file still exists and hasn't changed (skip for remote files)
+	if !isRemoteFile {
+		stat, err := os.Stat(job.FilePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				// File was deleted, mark it as deleted in database
+				return p.markFileDeleted(job.DirectoryID, job.FilePath)
+			}
+			return fmt.Errorf("failed to stat file: %w", err)
+		}
+
+		// Check if file was modified since job was created
+		if stat.ModTime().After(fileInfo.ModifiedTime) {
+			return fmt.Errorf("file was modified after job creation, skipping")
+		}
 	}
 
 	// Get database for this directory
@@ -110,6 +146,12 @@ func (p *AgentFSProcessor) processParseJob(ctx context.Context, job *Job) error 
 
 	// Skip empty files
 	if len(content) == 0 {
+		// Clean up cached file if this was a remote file
+		if shouldCleanup {
+			if err := os.Remove(job.FilePath); err != nil {
+				fmt.Printf("Warning: failed to clean up cached file %s: %v\n", job.FilePath, err)
+			}
+		}
 		return nil
 	}
 
@@ -140,7 +182,22 @@ func (p *AgentFSProcessor) processParseJob(ctx context.Context, job *Job) error 
 		Payload:     string(payloadBytes),
 	}
 
-	return p.addEmbedJob(embedJob)
+	// Add the embedding job
+	if err := p.addEmbedJob(embedJob); err != nil {
+		return err
+	}
+
+	// Clean up cached file if this was a remote file
+	if shouldCleanup {
+		if err := os.Remove(job.FilePath); err != nil {
+			// Log warning but don't fail the job since processing was successful
+			fmt.Printf("Warning: failed to clean up cached file %s: %v\n", job.FilePath, err)
+		} else {
+			fmt.Printf("Cleaned up cached file: %s\n", job.FilePath)
+		}
+	}
+
+	return nil
 }
 
 // processEmbedJob handles text embedding

@@ -1,306 +1,235 @@
 # AgentFS: The Agentic Filesystem
 
-## The Evolution of Filesystems for the AI Era
+**"Where traditional filesystems end, agentic intelligence begins"**
 
-"Where traditional filesystems end, agentic intelligence begins"
+AgentFS transforms passive file storage into an active, searchable, and semantically-aware knowledge base that AI agents can reason about and interact with naturally.
 
-As we enter the age of agentic AI systems, traditional filesystems are no longer sufficient. While they've served us well for organizing and storing data in hierarchical structures, they lack the semantic understanding and intelligent primitives that AI agents need to truly understand and interact with our digital knowledge.
+## Why AgentFS?
 
-AgentFS represents the next evolution in filesystem design - one that bridges the gap between raw data storage and intelligent information retrieval. It transforms passive file storage into an active, searchable, and semantically-aware knowledge base that AI agents can reason about and interact with naturally.
+As we enter the age of agentic AI systems, traditional filesystems are no longer sufficient. They lack the semantic understanding and intelligent primitives that AI agents need to truly understand and interact with our digital knowledge.
 
-### Why Traditional Filesystems Fall Short
+### Traditional Filesystems Fall Short
 
-Traditional filesystems are fundamentally limited because they:
+- **Lack Semantic Understanding**: Files organized by names and paths, not meaning
+- **No Built-in Search**: External tools with outdated indexes
+- **Miss Implicit Relationships**: No discovery of connections between related files
+- **Provide No Agentic Primitives**: No way for AI agents to ask questions or discover insights
 
-1. **Lack Semantic Understanding**: Files are organized by names and paths, not by meaning or context
-2. **Have No Built-in Search**: Searching requires external tools and indexes that are often outdated
-3. **Miss Implicit Relationships**: Connections between related files across directories are not discoverable
-4. **Provide No Agentic Primitives**: There's no built-in way for AI agents to ask questions or discover insights
+### AgentFS Bridges the Gap
 
-### AgentFS: Bridging the Gap
+AgentFS introduces agentic primitives directly into the filesystem layer, making your filesystem a collaborative intelligence partner rather than just a data store.
 
-AgentFS introduces agentic primitives directly into the filesystem layer:
+## Key Features
 
-- **Semantic Indexing**: Every file is automatically parsed, chunked, and indexed with vector embeddings
-- **Intelligent Search**: Natural language queries that understand context and intent
-- **Cross-File Relationships**: Automatic discovery of connections between related content
-- **Agentic APIs**: Model Context Protocol (MCP) server for direct AI agent integration
-- **File-Type Intelligence**: Specialized parsers that understand the structure and meaning of different file types
+🏗️ **Multi-Storage Architecture**
+- Local directories with real-time monitoring
+- Cloud storage (S3, GCS, Azure) with intelligent sync
+- Read-only design preserves source integrity
 
-With AgentFS, your filesystem becomes a collaborative intelligence partner rather than just a data store.
+🔍 **Semantic Intelligence**
+- Automatic parsing, chunking, and vector embedding
+- Hybrid search combining full-text and semantic similarity
+- Cross-file relationship discovery
 
-## Features
+🤖 **AI Agent Integration**
+- Model Context Protocol (MCP) server for direct agent access
+- REST API for custom integrations
+- Natural language query processing
 
-- **Real-time File Monitoring**: Monitors directories for file changes with automatic cleanup
-- **Intelligent Storage**: Automatically creates and maintains `.agentfs` directories with SQLite database
-- **Hybrid Search**: Combines full-text search (FTS5) with vector similarity search
-- **Smart Compression**: Automatic gzip compression for text chunks (40-60% space savings)
-- **Database Maintenance**: VACUUM operations, cleanup, and index optimization
-- **Cross-Platform Embeddings**: FastEmbed-go with ONNX Runtime for configurable embedding models
-- **Modular Parser System**: Extensible architecture supporting multiple file formats
-- **Document Support**: PDF, DOCX, PPTX, RTF parsing with content extraction
-- **Spreadsheet Support**: XLSX, XLS, ODS, CSV, TSV with intelligent cell processing
-- **Code Intelligence**: Advanced code parsing with syntax-aware chunking
-- **REST API**: Full search capabilities via HTTP endpoints
-- **MCP Integration**: Model Context Protocol server for AI agent integration
-- **Filesystem Abstraction**: Ready for local and object store support
+⚡ **Performance & Scale**
+- Intelligent caching and compression (40-60% space savings)
+- Concurrent processing with configurable workers
+- Automatic maintenance and optimization
+
+## Use Cases
+
+### 📚 Documentation & Knowledge Management
+Transform scattered documentation into a queryable knowledge base:
+- **Research Teams**: Index papers, notes, and references across multiple storage locations
+- **Engineering Teams**: Search code, docs, and specifications with natural language
+- **Content Teams**: Find related articles, drafts, and assets across cloud storage
+
+### 🤖 AI Agent Development
+Provide AI agents with semantic file system access:
+- **Code Assistants**: Understand entire codebases for better suggestions
+- **Documentation Bots**: Answer questions using your organization's knowledge
+- **Research Agents**: Analyze and synthesize information from document collections
+
+### 📂 Personal Knowledge Systems
+Build your second brain with intelligent file organization:
+- **Note Taking**: Connect related notes and documents automatically
+- **Research**: Query your reading materials and saved articles
+- **Projects**: Find relevant files across different storage services
+
+### 🔧 Development & DevOps
+Enhance development workflows with semantic search:
+- **Configuration Management**: Find related configs across repositories
+- **Log Analysis**: Search and correlate logs with contextual understanding
+- **API Documentation**: Query API docs and implementation examples
+
+## Quick Start
+
+### 1. Installation
+```bash
+# Clone and build
+git clone https://github.com/yourusername/agentfs.git
+cd agentfs
+go build -o build/agentfs -tags "fts5" ./cmd/agentfs
+
+# Initialize configuration
+./build/agentfs config init
+```
+
+### 2. Configure Storage Sources
+```bash
+# Add local directory
+./build/agentfs source add
+
+# Or edit config directly
+vim ~/.agentfs/config.json
+```
+
+### 3. Start AgentFS
+```bash
+./build/agentfs
+```
+
+### 4. Search Your Content
+```bash
+# REST API
+curl "http://localhost:8080/search?q=machine learning"
+
+# MCP for AI agents
+curl "http://localhost:8081/mcp/search?q=API documentation"
+```
+
+## Example Queries
+
+### Natural Language Search
+- *"Find documents about API authentication"*
+- *"Show me configuration files for microservices"*
+- *"What papers discuss neural network architectures?"*
+
+### Cross-Source Discovery
+- Search simultaneously across local files, S3 buckets, and Google Drive
+- Find related content regardless of storage location
+- Discover connections between documents in different formats
+
+### AI Agent Integration
+```python
+# Using MCP protocol
+agent.search("deployment strategies for kubernetes")
+agent.retrieve("docs/api/authentication.md")
+agent.stats("show indexing progress")
+```
 
 ## Architecture
 
+AgentFS implements a modular, multi-storage architecture:
+
 ```
-agentfs/
-├── cmd/agentfs/          # Main application entry point
-├── pkg/
-│   ├── config/           # Configuration management (FastEmbed model selection)
-│   ├── monitor/          # File system monitoring with lifecycle management
-│   ├── database/         # SQLite database with compression & maintenance
-│   ├── embeddings/       # FastEmbed-go with ONNX Runtime
-│   ├── search/           # Hybrid search engine (FTS5 + vector)
-│   ├── queue/            # File processing queue system
-│   ├── api/              # REST API server
-│   ├── protocol/         # Model Context Protocol server
-│   ├── parsers/          # Modular parser system
-│   │   ├── registry.go   # Parser registration and factory
-│   │   ├── documents.go  # DOCX, PPTX, RTF parsers
-│   │   ├── spreadsheets.go # XLSX, XLS, ODS, CSV parsers
-│   │   └── pdf.go        # PDF content extraction
-│   └── filesystem/       # Filesystem abstraction
-└── internal/
-    ├── utils/            # Utility functions
-    └── models/           # Data models
-```
-
-## Getting Started
-
-### Prerequisites
-
-1. **Go 1.21 or later**
-2. **ONNX Runtime** (for FastEmbed embeddings):
-   - Download from [ONNX Runtime releases](https://github.com/microsoft/onnxruntime/releases)
-   - Extract and set `ONNX_PATH` environment variable to the lib directory
-   - Or let AgentFS download it automatically on first run
-
-### Installation
-
-1. Clone this repository
-2. Run `go mod tidy` to download dependencies
-3. Build the application: `make build` (or `go build -o build/agentfs -tags "fts5" cmd/agentfs/main.go`)
-4. Run the application: `./build/agentfs`
-
-## Configuration
-
-AgentFS can be configured using environment variables:
-
-- `AGENTFS_DIRS`: Comma-separated list of directories to monitor (default: current directory)
-- `AGENTFS_FASTEMBED_MODEL`: Embedding model to use (default: "bge-base-en-v1.5")
-  - Available models: `bge-base-en`, `bge-base-en-v1.5`, `bge-small-en`, `bge-small-en-v1.5`
-  - Different models have different vector dimensions (384 or 768)
-- `ONNX_PATH`: Path to ONNX Runtime library directory (auto-detected if not set)
-
-### Embedding Models
-
-| Model | Dimensions | Description |
-|-------|------------|-------------|
-| `bge-base-en` | 768 | BAAI General Embedding, good balance of speed and quality |
-| `bge-base-en-v1.5` | 768 | Improved version of BGE-base-en (default) |
-| `bge-small-en` | 384 | Faster, smaller model with reduced accuracy |
-| `bge-small-en-v1.5` | 384 | Improved version of BGE-small-en |
-
-## Embedding Support
-
-AgentFS uses **FastEmbed-go** with ONNX Runtime for cross-platform embedding generation. This provides:
-
-- **High-quality embeddings**: State-of-the-art BGE (BAAI General Embedding) models
-- **Cross-platform compatibility**: Works on Linux, macOS, and Windows
-- **Configurable models**: Choose between speed and accuracy based on your needs
-- **Automatic model download**: Models are downloaded and cached on first use
-- **Dynamic dimensions**: Vector index automatically adapts to the selected model
-
-## Full-Text Search
-
-AgentFS supports full-text search using SQLite's FTS5 extension. To enable FTS5 support, build the application with the `fts5` build tag:
-
-```bash
-# Using make
-make build
-
-# Or directly
-go build -o build/agentfs -tags "fts5" cmd/agentfs/main.go
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│  REST API   │  │ MCP Server  │  │ CLI Tools   │
+└──────┬──────┘  └──────┬──────┘  └──────┬──────┘
+       │                │                │
+       └────────────────┼────────────────┘
+                        │
+              ┌─────────▼─────────┐
+              │  Hybrid Search    │
+              │ (FTS5 + Vector)   │
+              └─────────┬─────────┘
+                        │
+          ┌─────────────┼─────────────┐
+          │             │             │
+    ┌─────▼─────┐ ┌─────▼─────┐ ┌─────▼─────┐
+    │ Database  │ │ Embedder  │ │Job Queue  │
+    │(SQLite +  │ │(FastEmbed │ │Processing │
+    │ Vector)   │ │+ ONNX)    │ │           │
+    └───────────┘ └───────────┘ └─────┬─────┘
+                                      │
+                            ┌─────────▼─────────┐
+                            │     Monitor       │
+                            │(Local + Remote)   │
+                            └─────────┬─────────┘
+                                      │
+                            ┌─────────▼─────────┐
+                            │ Storage Factory   │
+                            │(Multi-Backend)    │
+                            └─────────┬─────────┘
+                                      │
+            ┌─────────────────────────┼─────────────────────────┐
+            │                         │                         │
+    ┌───────▼───────┐       ┌─────────▼─────────┐       ┌───────▼───────┐
+    │ Local Files   │       │  Cloud Storage    │       │ Future Stores │
+    │(Real-time)    │       │ (S3,GCS,Azure)    │       │               │
+    └───────────────┘       └───────────────────┘       └───────────────┘
 ```
 
-If FTS5 is not available, the application will fall back to simple LIKE-based search.
+## Documentation
 
-## API
+- **[Configuration Guide](docs/configuration.md)** - Setup and configuration options
+- **[Storage Backends](docs/storage-backends.md)** - Local and cloud storage setup
+- **[API Reference](docs/api.md)** - REST API and MCP server documentation
+- **[Development Guide](docs/development.md)** - Contributing and development setup
+- **[Architecture Overview](docs/architecture.md)** - Technical architecture details
 
-### REST API (Port 8080)
+## Prerequisites
 
-AgentFS exposes a comprehensive REST API for search and management:
+- **Go 1.21+** for building from source
+- **ONNX Runtime** for embeddings (auto-downloaded on first run)
+- **SQLite with FTS5** for full-text search (usually pre-installed)
 
-- `GET /health`: Health check endpoint
-- `GET /search?q={query}`: Hybrid search across all monitored directories
-  - Combines full-text search with vector similarity search
-  - Returns ranked results with relevance scores
-  - Supports natural language queries
+## Supported File Types
 
-### Model Context Protocol (Port 8081)
+### Documents
+- **Text**: Markdown, plain text, reStructuredText
+- **Office**: PDF, DOCX, PPTX, RTF
+- **Spreadsheets**: XLSX, XLS, ODS, CSV, TSV
 
-Built-in MCP server for seamless AI agent integration:
+### Code & Markup
+- **Code**: Go, Python, JavaScript, TypeScript, Java, C++, and more
+- **Markup**: HTML, XML, JSON, YAML
+- **Config**: INI, TOML, environment files
 
-- `GET /mcp`: MCP protocol information and capabilities
-- `GET /mcp/search?q={query}`: AI-optimized search endpoint
-- `GET /mcp/resources`: List available resources and capabilities
-- `POST /mcp/tools/call`: Execute MCP tools for advanced operations
+### Extensible Parser System
+Add support for new file types through the modular parser registry.
 
-### Database Management
+## Storage Backends
 
-AgentFS provides APIs for database maintenance and monitoring:
+- **Local Filesystem**: Real-time monitoring with immediate indexing
+- **Amazon S3**: S3-compatible object storage with configurable endpoints
+- **Google Cloud Storage**: Native GCS integration with service accounts
+- **Azure Blob Storage**: Azure containers with account key authentication
 
-```go
-// Get database statistics
-stats, err := db.GetDatabaseStats()
-fmt.Printf("Total size: %d bytes, %d files indexed\n", stats.TotalSize, stats.FileCount)
+All backends follow a **read-only architecture** - AgentFS never modifies source files.
 
-// Run maintenance operations
-maintenanceStats, err := db.PerformMaintenance(database.DefaultMaintenanceOptions())
-fmt.Printf("Space saved: %d bytes\n", maintenanceStats.SpaceSaved())
-```
+## Performance
 
-## Filesystem Abstraction
+### Optimization Features
+- **Text Compression**: 40-60% space savings with automatic gzip compression
+- **Intelligent Caching**: Remote files cached locally during processing
+- **Concurrent Processing**: Configurable worker pools for parallel processing
+- **Smart Indexing**: Only process changed files, skip duplicates
 
-AgentFS includes a filesystem abstraction that allows it to work with both local files and object stores. Currently, only local filesystem support is implemented, but the architecture is designed to easily add support for:
-
-- Amazon S3
-- Google Cloud Storage
-- Azure Blob Storage
-- Other object stores
-
-## File Format Support
-
-AgentFS includes a **modular parser system** that supports a wide range of file formats:
-
-### Document Formats
-- **PDF**: Full text extraction with metadata preservation
-- **DOCX**: Microsoft Word documents with rich text and formatting
-- **PPTX**: PowerPoint presentations with slide content
-- **RTF**: Rich Text Format documents
-
-### Spreadsheet Formats
-- **XLSX**: Modern Excel workbooks with multi-sheet support
-- **XLS**: Legacy Excel workbooks (binary format)
-- **ODS**: OpenDocument spreadsheets
-- **CSV/TSV**: Comma and tab-separated values with smart header detection
-
-### Code & Text Formats
-- **Code files**: Syntax-aware parsing for `.go`, `.py`, `.js`, `.ts`, etc.
-- **Text files**: Markdown, plain text, reStructuredText, etc.
-- **Markup files**: HTML, XML, JSON with structure-aware parsing
-
-### Unsupported Formats
-- **DOC**: Legacy Word documents (complex proprietary format)
-  - *Recommendation*: Convert to DOCX format for better support
-
-### Adding New Parsers
-
-The modular parser system makes it easy to add support for new file types:
-
-```go
-// Register a new parser for .foo files
-parsers.DefaultRegistry.RegisterParser(".foo", NewFooParserFactory())
-```
-
-## Storage Optimization
-
-AgentFS includes intelligent storage optimization to minimize disk usage:
-
-### Text Compression
-- **Automatic compression**: Text chunks larger than 512 bytes are compressed using gzip
-- **Smart threshold**: Only compresses if it achieves at least 10% size reduction
-- **Transparent operation**: Decompression happens automatically during reads
-- **Space savings**: 40-60% reduction for text-heavy content
-- **Backward compatibility**: Seamlessly works with existing uncompressed data
-
-### Database Maintenance
-AgentFS provides comprehensive database maintenance operations:
-
-```go
-// Example: Run maintenance with custom options
-opts := database.DefaultMaintenanceOptions()
-opts.DeletedThreshold = 7 * 24 * time.Hour  // Clean up week-old deletions
-stats, err := db.PerformMaintenance(opts)
-fmt.Printf("Maintenance complete: saved %d bytes\n", stats.SpaceSaved())
-```
-
-**Maintenance Operations:**
-- **VACUUM**: Reclaims space from deleted records (5-10% savings)
-- **Cleanup**: Removes soft-deleted records older than threshold
-- **Reindexing**: Rebuilds indexes for optimal performance
-- **Statistics**: Detailed database size and efficiency metrics
-
-### Storage Impact
-For a typical large project (10,000 files, 500MB text):
-- **Original size**: ~1.2GB in database (includes embeddings)
-- **With compression**: ~720MB (40% reduction)
-- **After maintenance**: ~650MB (additional 10% savings)
-
-## Development
-
-### Building
-
-```bash
-# Build with FTS5 support
-make build
-
-# Run directly
-make run
-
-# Clean build artifacts
-make clean
-```
-
-### Testing
-
-AgentFS includes comprehensive test coverage across all modules:
-
-```bash
-# Run all tests
-make test
-
-# Run tests with coverage
-go test -cover ./...
-
-# Run specific module tests
-go test ./pkg/embeddings/
-go test ./pkg/database/
-go test ./pkg/search/
-go test ./pkg/queue/
-go test ./pkg/parsers/
-
-# Format code
-make fmt
-
-# Run vet
-make vet
-```
-
-**Test Coverage Includes:**
-- **Embeddings**: FastEmbed integration, model configuration, dimension handling
-- **Database**: CRUD operations, compression, maintenance, migrations
-- **Search**: Hybrid search, FTS5 integration, vector similarity
-- **Queue**: File processing, concurrent operations, error handling
-- **Parsers**: Document parsing, format detection, content extraction
-- **Integration**: End-to-end file monitoring and search workflows
-
-### Benchmarking
-
-Performance benchmarks are included for critical operations:
-
-```bash
-# Run benchmarks
-go test -bench=. ./pkg/embeddings/
-go test -bench=. ./pkg/database/
-go test -bench=. ./pkg/search/
-```
+### Scalability
+- **Per-Source Databases**: Isolated storage for each source
+- **Batch Processing**: Efficient embedding generation
+- **Automatic Maintenance**: Background cleanup and optimization
 
 ## License
 
-MIT
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Contributing
+
+We welcome contributions! See the [Development Guide](docs/development.md) for setup instructions and contribution guidelines.
+
+## Community
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/agentfs/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/agentfs/discussions)
+- **Documentation**: [docs/](docs/)
+
+---
+
+**AgentFS**: Making your filesystem intelligent, searchable, and agent-ready.
