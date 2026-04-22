@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
-	"agentfs/internal/utils"
+	"agentfs/pkg/chunking"
 	"agentfs/pkg/config"
 	"agentfs/pkg/database"
 	"agentfs/pkg/embeddings"
@@ -26,23 +29,33 @@ type FileInfo struct {
 
 // AgentFSProcessor processes AgentFS jobs
 type AgentFSProcessor struct {
-	config       *config.Config
-	databases    map[string]*database.DB
-	embedder     *embeddings.Embedder
-	filesystem   filesystem.FileSystem
-	queue        *Queue
-	searchEngine *search.Engine
+	config        *config.Config
+	databases     map[string]*database.DB
+	embedder      *embeddings.Embedder
+	filesystem    filesystem.FileSystem
+	queue         *Queue
+	searchEngine  *search.Engine
+	chunkingService *chunking.ChunkingService
+	updateManagers  map[string]*database.FileUpdateManager
 }
 
 // NewAgentFSProcessor creates a new processor
 func NewAgentFSProcessor(cfg *config.Config, databases map[string]*database.DB, embedder *embeddings.Embedder, queue *Queue, searchEngine *search.Engine) *AgentFSProcessor {
+	// Initialize update managers for each database
+	updateManagers := make(map[string]*database.FileUpdateManager)
+	for dbID, db := range databases {
+		updateManagers[dbID] = database.NewFileUpdateManager(db, database.UpdateStrategySoftDelete)
+	}
+
 	return &AgentFSProcessor{
-		config:       cfg,
-		databases:    databases,
-		embedder:     embedder,
-		filesystem:   filesystem.NewLocalFileSystem(),
-		queue:        queue,
-		searchEngine: searchEngine,
+		config:          cfg,
+		databases:       databases,
+		embedder:        embedder,
+		filesystem:      filesystem.NewLocalFileSystem(),
+		queue:           queue,
+		searchEngine:    searchEngine,
+		chunkingService: chunking.NewChunkingService(),
+		updateManagers:  updateManagers,
 	}
 }
 
@@ -120,7 +133,7 @@ func (p *AgentFSProcessor) processParseJob(ctx context.Context, job *Job) error 
 	}
 
 	// Get database for this directory
-	db, exists := p.databases[job.DirectoryID]
+	_, exists := p.databases[job.DirectoryID]
 	if !exists {
 		return fmt.Errorf("database not found for directory: %s", job.DirectoryID)
 	}
@@ -155,36 +168,10 @@ func (p *AgentFSProcessor) processParseJob(ctx context.Context, job *Job) error 
 		return nil
 	}
 
-	// Upsert file record in database
-	fileRecord, err := db.UpsertFile(job.FilePath, fileInfo.Checksum, fileInfo.Size)
+	// Process content using streaming chunking
+	err = p.processContentStreaming(job.DirectoryID, job.FilePath, fileInfo, file)
 	if err != nil {
-		return fmt.Errorf("failed to upsert file record: %w", err)
-	}
-
-	// Store parsed content for embedding job
-	embedPayload := map[string]interface{}{
-		"file_id": fileRecord.ID,
-		"content": content,
-		"file_path": job.FilePath,
-	}
-
-	payloadBytes, err := json.Marshal(embedPayload)
-	if err != nil {
-		return fmt.Errorf("failed to marshal embed payload: %w", err)
-	}
-
-	// Create embedding job
-	embedJob := &Job{
-		Type:        JobTypeEmbed,
-		FilePath:    job.FilePath,
-		DirectoryID: job.DirectoryID,
-		Priority:    job.Priority,
-		Payload:     string(payloadBytes),
-	}
-
-	// Add the embedding job
-	if err := p.addEmbedJob(embedJob); err != nil {
-		return err
+		return fmt.Errorf("failed to process content: %w", err)
 	}
 
 	// Clean up cached file if this was a remote file
@@ -224,12 +211,32 @@ func (p *AgentFSProcessor) processEmbedJob(ctx context.Context, job *Job) error 
 		return fmt.Errorf("database not found for directory: %s", job.DirectoryID)
 	}
 
-	// Chunk the content
-	chunkOptions := utils.DefaultChunkOptions()
-	chunks := utils.ChunkText(content, chunkOptions)
+	// Use new chunking service
+	contentReader := strings.NewReader(content)
+	fileExt := strings.TrimPrefix(filepath.Ext(job.FilePath), ".")
+	if fileExt == "" {
+		fileExt = "txt"
+	}
+
+	chunkCh, errCh := p.chunkingService.ChunkStreamByFileType(contentReader, fileExt, nil)
+	var chunks []chunking.Chunk
+
+	// Collect chunks
+	for chunk := range chunkCh {
+		chunks = append(chunks, chunk)
+	}
+
+	// Check for streaming errors
+	select {
+	case err := <-errCh:
+		if err != nil {
+			return fmt.Errorf("chunking error: %w", err)
+		}
+	default:
+	}
 
 	// Process each chunk
-	for i, chunk := range chunks {
+	for _, chunk := range chunks {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -237,20 +244,20 @@ func (p *AgentFSProcessor) processEmbedJob(ctx context.Context, job *Job) error 
 		}
 
 		// Skip empty chunks
-		if len(chunk) == 0 {
+		if len(strings.TrimSpace(chunk.Content)) == 0 {
 			continue
 		}
 
 		// Generate embedding
-		embedding, err := p.embedder.Embed(chunk)
+		embedding, err := p.embedder.Embed(chunk.Content)
 		if err != nil {
-			return fmt.Errorf("failed to generate embedding for chunk %d: %w", i, err)
+			return fmt.Errorf("failed to generate embedding for chunk %d: %w", chunk.Index, err)
 		}
 
 		// Store chunk with embedding
-		fileChunk, err := db.UpsertChunk(int64(fileID), chunk, embedding, i*chunkOptions.ChunkSize, len(chunk))
+		fileChunk, err := db.UpsertChunk(int64(fileID), chunk.Content, embedding, chunk.Offset, chunk.Length)
 		if err != nil {
-			return fmt.Errorf("failed to store chunk %d: %w", i, err)
+			return fmt.Errorf("failed to store chunk %d: %w", chunk.Index, err)
 		}
 
 		// Add to vector index if search engine is available
@@ -292,7 +299,118 @@ func (p *AgentFSProcessor) markFileDeleted(directoryID, filePath string) error {
 	return db.SoftDeleteFile(filePath)
 }
 
-// addEmbedJob adds an embedding job to the queue
+// processContentStreaming processes file content using streaming chunking and embeddings
+func (p *AgentFSProcessor) processContentStreaming(directoryID, filePath string, fileInfo FileInfo, file io.ReadCloser) error {
+	defer file.Close()
+
+	// Get appropriate parser
+	parser := parsers.GetParser(filePath)
+	if parser == nil {
+		return fmt.Errorf("unsupported file type for parsing: %s", filePath)
+	}
+
+	// Parse content
+	content, err := parser.Parse(file)
+	if err != nil {
+		return fmt.Errorf("failed to parse file: %w", err)
+	}
+
+	// Skip empty files
+	if len(content) == 0 {
+		return nil
+	}
+
+	// Reopen file for chunking (since parser consumed it)
+	file, err = p.filesystem.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to reopen file for chunking: %w", err)
+	}
+	defer file.Close()
+
+	// Parse again for chunking (optimization: could cache parsed content)
+	content, err = parser.Parse(file)
+	if err != nil {
+		return fmt.Errorf("failed to reparse file for chunking: %w", err)
+	}
+
+	// Get file extension for chunking strategy
+	fileExt := strings.TrimPrefix(filepath.Ext(filePath), ".")
+	if fileExt == "" {
+		fileExt = "txt"
+	}
+
+	// Stream chunks and process them
+	contentReader := strings.NewReader(content)
+	chunkCh, errCh := p.chunkingService.ChunkStreamByFileType(contentReader, fileExt, nil)
+
+	// Collect chunks and embeddings
+	var chunks []database.ChunkData
+
+	// Process chunks as they arrive
+	for chunk := range chunkCh {
+		// Generate embedding for this chunk
+		embedding, err := p.embedder.Embed(chunk.Content)
+		if err != nil {
+			return fmt.Errorf("failed to generate embedding for chunk %d: %w", chunk.Index, err)
+		}
+
+		// Add to chunk data
+		chunks = append(chunks, database.ChunkData{
+			Content:   chunk.Content,
+			Embedding: embedding,
+			Offset:    chunk.Offset,
+			Length:    chunk.Length,
+		})
+	}
+
+	// Check for streaming errors
+	select {
+	case err := <-errCh:
+		if err != nil {
+			return fmt.Errorf("chunking error: %w", err)
+		}
+	default:
+	}
+
+	// Use update manager to handle file update with soft delete strategy
+	updateManager, exists := p.updateManagers[directoryID]
+	if !exists {
+		return fmt.Errorf("update manager not found for directory: %s", directoryID)
+	}
+
+	// Update file and chunks atomically
+	fileRecord, err := updateManager.UpdateFile(filePath, fileInfo.Checksum, fileInfo.Size, chunks)
+	if err != nil {
+		return fmt.Errorf("failed to update file and chunks: %w", err)
+	}
+
+	// Add chunks to vector index if search engine is available
+	if p.searchEngine != nil {
+		db := p.databases[directoryID]
+		if db != nil {
+			// Get the actual chunk records to get their IDs
+			fileChunks, err := db.GetChunksByFileID(fileRecord.ID)
+			if err != nil {
+				// Log warning but don't fail
+				fmt.Printf("Warning: failed to get chunks for vector indexing: %v\n", err)
+			} else {
+				for _, chunk := range fileChunks {
+					if chunk.DeletedAt == nil { // Only index non-deleted chunks
+						if len(chunk.Embedding) > 0 {
+							if err := p.searchEngine.AddToVectorIndex(directoryID, chunk.ID, chunk.Embedding); err != nil {
+								fmt.Printf("Warning: failed to add chunk %d to vector index: %v\n", chunk.ID, err)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// addEmbedJob adds an embedding job to the queue (deprecated - use streaming processing)
 func (p *AgentFSProcessor) addEmbedJob(job *Job) error {
 	_, err := p.queue.AddJob(job.Type, job.FilePath, job.DirectoryID, job.Priority, job.Payload)
 	return err
