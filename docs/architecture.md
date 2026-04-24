@@ -104,9 +104,10 @@ AgentFS implements a modular, multi-storage architecture designed for scalabilit
   - Cross-platform compatibility
 
 #### Text Processing
-- **Chunking**: Intelligent text segmentation
-- **Strategies**: Sliding window, sentence boundaries, semantic chunks
-- **Optimization**: Overlap handling, size limits
+- **Streaming Chunking**: Memory-efficient processing for large files
+- **Multiple Strategies**: Simple, separator-based, sentence-aware, token-based
+- **File-Type Optimization**: Automatic strategy selection by file extension
+- **Configurable Options**: Chunk size, overlap, separators, min chunk size
 
 ### 4. Search Engine
 
@@ -136,14 +137,16 @@ AgentFS implements a modular, multi-storage architecture designed for scalabilit
 
 ### Local File Processing
 ```
-File Change Event → File Watcher → Job Queue → Parser → Embedder → Database → Search Index
-                                      ↓
-                                 File Cleanup (if remote)
+File Change Event → File Watcher → Job Queue → Parser → Streaming Chunker → Embedder → Update Manager → Search Index
+                                                                                    ↓
+                                                                           Soft Delete Old Chunks
 ```
 
 ### Remote File Processing
 ```
-Scan Timer → Remote Scanner → Download to Cache → Job Queue → Parser → Embedder → Database → Search Index → Cache Cleanup
+Scan Timer → Remote Scanner → Download to Cache → Job Queue → Parser → Streaming Chunker → Embedder → Update Manager → Search Index → Cache Cleanup
+                                                                                                            ↓
+                                                                                                   Soft Delete Old Chunks
 ```
 
 ### Search Query Flow

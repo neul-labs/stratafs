@@ -63,7 +63,8 @@ agentfs/
 │   ├── queue/            # Job processing system
 │   ├── api/              # REST API server
 │   ├── protocol/         # Model Context Protocol
-│   └── parsers/          # File parsing system
+│   ├── parsers/          # File parsing system
+│   └── chunking/         # Text chunking strategies
 ├── internal/             # Private packages
 │   ├── utils/            # Utility functions
 │   └── models/           # Data models
@@ -143,6 +144,9 @@ go test ./pkg/search/ -v
 
 # File parsing
 go test ./pkg/parsers/ -v
+
+# Chunking strategies
+go test ./pkg/chunking/ -v
 ```
 
 #### Integration Tests
@@ -182,6 +186,40 @@ func TestFileParser(t *testing.T) {
     result, err := parser.Parse(reader)
     assert.NoError(t, err)
     assert.Equal(t, content, result)
+}
+```
+
+#### Chunking Strategy Test Example
+```go
+func TestNewStrategyChunker(t *testing.T) {
+    chunker := &NewStrategyChunker{}
+
+    options := ChunkOptions{
+        ChunkSize:   100,
+        OverlapSize: 20,
+        Strategy:    "newstrategy",
+    }
+
+    // Test streaming
+    text := "This is a long text that should be chunked..."
+    reader := strings.NewReader(text)
+    chunkCh, errCh := chunker.ChunkStream(reader, options)
+
+    var chunks []Chunk
+    for chunk := range chunkCh {
+        chunks = append(chunks, chunk)
+    }
+
+    // Check for errors
+    select {
+    case err := <-errCh:
+        require.NoError(t, err)
+    default:
+    }
+
+    // Verify chunks
+    assert.Greater(t, len(chunks), 0)
+    assert.LessOrEqual(t, len(chunks[0].Content), options.ChunkSize)
 }
 ```
 
@@ -311,7 +349,90 @@ func (f *StorageFactory) CreateFileSystem(source config.StorageSource) (filesyst
 }
 ```
 
-### 3. API Endpoints
+### 3. Chunking Strategies
+To add new text chunking strategies:
+
+```go
+// pkg/chunking/newstrategy.go
+package chunking
+
+import (
+    "io"
+)
+
+type NewStrategyChunker struct{}
+
+func (c *NewStrategyChunker) Name() string {
+    return "newstrategy"
+}
+
+func (c *NewStrategyChunker) Description() string {
+    return "Description of new chunking strategy"
+}
+
+func (c *NewStrategyChunker) DefaultOptions() ChunkOptions {
+    return ChunkOptions{
+        ChunkSize:   1000,
+        OverlapSize: 100,
+        Strategy:    "newstrategy",
+    }
+}
+
+// Primary streaming method - implement this first
+func (c *NewStrategyChunker) ChunkStream(reader io.Reader, options ChunkOptions) (<-chan Chunk, <-chan error) {
+    chunkCh := make(chan Chunk, 10)
+    errCh := make(chan error, 1)
+
+    go func() {
+        defer close(chunkCh)
+        defer close(errCh)
+
+        // Your chunking logic here
+        // Emit chunks via chunkCh
+        // Report errors via errCh
+    }()
+
+    return chunkCh, errCh
+}
+
+// Convenience method for small text
+func (c *NewStrategyChunker) Chunk(text string, options ChunkOptions) ([]Chunk, error) {
+    reader := strings.NewReader(text)
+    chunkCh, errCh := c.ChunkStream(reader, options)
+
+    var chunks []Chunk
+    for chunk := range chunkCh {
+        chunks = append(chunks, chunk)
+    }
+
+    select {
+    case err := <-errCh:
+        if err != nil {
+            return nil, err
+        }
+    default:
+    }
+
+    return chunks, nil
+}
+
+// Register in pkg/chunking/chunker.go NewChunkerFactory()
+func NewChunkerFactory() *ChunkerFactory {
+    factory := &ChunkerFactory{
+        chunkers: make(map[string]Chunker),
+    }
+
+    factory.Register(&SimpleChunker{})
+    factory.Register(&SeparatorChunker{})
+    factory.Register(&SentenceChunker{})
+    factory.Register(&TokenChunker{})
+    factory.Register(&NewStrategyChunker{}) // Add your chunker
+
+    return factory
+}
+```
+
+### 4. API Endpoints
 To add new API endpoints:
 
 ```go

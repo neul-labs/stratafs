@@ -62,6 +62,8 @@ curl "http://localhost:8080/search?q=machine learning algorithms&limit=5"
       "chunk_content": "Neural networks are a class of machine learning algorithms...",
       "relevance_score": 0.95,
       "chunk_offset": 1024,
+      "chunk_length": 256,
+      "chunk_strategy": "sentence",
       "file_size": 15420,
       "modified_time": "2024-01-15T10:30:00Z"
     }
@@ -90,7 +92,13 @@ curl "http://localhost:8080/documents/docs%2Fml%2Fneural-networks.md"
   "content": "# Neural Networks\n\nNeural networks are...",
   "file_size": 15420,
   "modified_time": "2024-01-15T10:30:00Z",
-  "chunks": 12
+  "chunks": 12,
+  "chunking_strategy": "sentence",
+  "processing_stats": {
+    "chunks_generated": 12,
+    "avg_chunk_size": 284,
+    "overlap_size": 50
+  }
 }
 ```
 
@@ -110,6 +118,42 @@ View processing queue statistics and system performance.
   "failed_jobs": 3,
   "worker_count": 4,
   "average_processing_time_ms": 250
+}
+```
+
+#### Chunking Statistics
+```http
+GET /chunking/stats
+```
+
+View chunking strategy usage and performance statistics.
+
+**Response:**
+```json
+{
+  "strategies": {
+    "simple": {
+      "files_processed": 450,
+      "avg_chunks_per_file": 8.5,
+      "avg_processing_time_ms": 120
+    },
+    "sentence": {
+      "files_processed": 200,
+      "avg_chunks_per_file": 12.3,
+      "avg_processing_time_ms": 180
+    },
+    "separator": {
+      "files_processed": 600,
+      "avg_chunks_per_file": 15.2,
+      "avg_processing_time_ms": 95
+    }
+  },
+  "total_chunks": 12450,
+  "compression_stats": {
+    "compressed_chunks": 8100,
+    "compression_ratio": 0.65,
+    "storage_saved": "45MB"
+  }
 }
 ```
 

@@ -76,6 +76,19 @@ AgentFS uses a JSON-based configuration system stored in `~/.agentfs/config.json
     "compression_threshold": 512,
     "maintenance_interval": "24h",
     "deleted_threshold": "168h"
+  },
+  "chunking": {
+    "default_strategy": "simple",
+    "chunk_size": 1000,
+    "overlap_size": 100,
+    "min_chunk_size": 50,
+    "file_type_strategies": {
+      "markdown": "separator",
+      "code": "separator",
+      "pdf": "sentence",
+      "txt": "sentence",
+      "csv": "separator"
+    }
   }
 }
 ```
@@ -142,6 +155,28 @@ Control storage optimization:
 }
 ```
 
+## Chunking Configuration
+
+Configure text processing and chunking strategies:
+
+```json
+{
+  "chunking": {
+    "default_strategy": "simple",     // Default chunking strategy
+    "chunk_size": 1000,               // Target chunk size in characters
+    "overlap_size": 100,              // Overlap between chunks
+    "min_chunk_size": 50,             // Minimum chunk size threshold
+    "file_type_strategies": {         // File-type specific strategies
+      "markdown": "separator",
+      "code": "separator",
+      "pdf": "sentence",
+      "txt": "sentence",
+      "csv": "separator"
+    }
+  }
+}
+```
+
 ## File Filters
 
 Configure which files to index:
@@ -171,6 +206,8 @@ Runtime configuration overrides:
 - `AGENTFS_MCP_PORT` - Override MCP server port
 - `AGENTFS_WORKER_COUNT` - Override worker count
 - `AGENTFS_EMBEDDING_MODEL` - Override embedding model
+- `AGENTFS_CHUNK_SIZE` - Override default chunk size
+- `AGENTFS_CHUNK_STRATEGY` - Override default chunking strategy
 
 Example:
 ```bash

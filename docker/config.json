@@ -1,0 +1,70 @@
+{
+  "version": "0.2.0",
+  "agent_dir": ".agentfs",
+  "global_dir": "/app/.agentfs",
+  "sources": [
+    {
+      "id": "default-data",
+      "name": "Data Volume",
+      "type": "local",
+      "enabled": true,
+      "path": "/app/data",
+      "local_cache_dir": "",
+      "credentials": null,
+      "filters": {
+        "include_patterns": ["*"],
+        "exclude_patterns": [".git/**", "node_modules/**", "*.tmp", "*.log"],
+        "max_file_size": 104857600,
+        "ignore_hidden": true
+      }
+    }
+  ],
+  "server": {
+    "api_port": 8080,
+    "mcp_port": 8081
+  },
+  "worker": {
+    "count": 4,
+    "scan_interval": "30s",
+    "batch_size": 10
+  },
+  "embedding": {
+    "model": "bge-base-en-v1.5",
+    "cache_dir": "/app/.agentfs/fastembed_cache",
+    "dimension": 768,
+    "model_info": {
+      "name": "BGE Base EN v1.5",
+      "description": "Improved BAAI General Embedding with better performance",
+      "max_tokens": 512,
+      "file_size": "420MB",
+      "speed": "medium",
+      "quality": "high",
+      "language": "English"
+    },
+    "performance": {
+      "batch_size": 32,
+      "max_concurrency": 4,
+      "cache_results": true,
+      "enable_gpu": false
+    }
+  },
+  "database": {
+    "compression_enabled": true,
+    "compression_threshold": 512,
+    "maintenance_interval": "24h",
+    "deleted_threshold": "168h"
+  },
+  "chunking": {
+    "default_strategy": "simple",
+    "chunk_size": 1000,
+    "overlap_size": 100,
+    "min_chunk_size": 50,
+    "file_type_strategies": {
+      "markdown": "separator",
+      "code": "separator",
+      "pdf": "sentence",
+      "txt": "sentence",
+      "csv": "separator"
+    }
+  }
+}

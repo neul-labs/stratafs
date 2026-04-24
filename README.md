@@ -27,7 +27,8 @@ AgentFS introduces agentic primitives directly into the filesystem layer, making
 - Read-only design preserves source integrity
 
 🔍 **Semantic Intelligence**
-- Automatic parsing, chunking, and vector embedding
+- Streaming text chunking with multiple strategies (simple, separator, sentence, token)
+- Automatic file-type optimization and vector embedding
 - Hybrid search combining full-text and semantic similarity
 - Cross-file relationship discovery
 
@@ -37,7 +38,9 @@ AgentFS introduces agentic primitives directly into the filesystem layer, making
 - Natural language query processing
 
 ⚡ **Performance & Scale**
+- Memory-efficient streaming processing for large files
 - Intelligent caching and compression (40-60% space savings)
+- Soft delete strategy for consistent file updates
 - Concurrent processing with configurable workers
 - Automatic maintenance and optimization
 
