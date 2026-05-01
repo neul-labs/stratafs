@@ -181,6 +181,12 @@ func TestFailJob(t *testing.T) {
 		t.Fatalf("Failed to add job: %v", err)
 	}
 
+	// Set max_retries to 0 so it fails immediately
+	_, err = queue.db.Exec("UPDATE jobs SET max_retries = 0 WHERE id = ?", job.ID)
+	if err != nil {
+		t.Fatalf("Failed to update max_retries: %v", err)
+	}
+
 	// Get and process the job
 	_, err = queue.GetNextJob()
 	if err != nil {
@@ -223,6 +229,8 @@ func TestGetQueueStats(t *testing.T) {
 
 	// Process and fail another job
 	queue.GetNextJob()
+	// Set max_retries to 0 so it fails immediately
+	queue.db.Exec("UPDATE jobs SET max_retries = 0 WHERE id = ?", job2.ID)
 	queue.FailJob(job2.ID, "test error")
 
 	// Get stats

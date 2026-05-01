@@ -68,9 +68,11 @@ func TestUnsupportedModel(t *testing.T) {
 	tempDir := t.TempDir()
 
 	cfg := &config.Config{
-		FastEmbedModel:     "unsupported-model",
-		FastEmbedCacheDir:  tempDir,
-		EmbeddingDimension: 0,
+		Embedding: config.EmbeddingConfig{
+			Model:     "unsupported-model",
+			CacheDir:  tempDir,
+			Dimension: 0,
+		},
 	}
 
 	_, err := NewEmbedder(cfg)

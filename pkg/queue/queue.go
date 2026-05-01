@@ -172,6 +172,9 @@ func (q *Queue) GetJob(id int64) (*Job, error) {
 	)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // Return nil job and nil error when no job is found
+		}
 		return nil, err
 	}
 

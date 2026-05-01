@@ -221,11 +221,14 @@ func TestSoftDelete(t *testing.T) {
 	}
 
 	// File should still exist but have deleted_at set
-	foundFile, err := db.GetFileByPath(file.Path)
+	foundFile, err := db.GetFileByPathWithDeleted(file.Path)
 	if err != nil {
 		t.Fatalf("Failed to find soft deleted file: %v", err)
 	}
-	if foundFile != nil && foundFile.DeletedAt == nil {
+	if foundFile == nil {
+		t.Fatal("Soft deleted file should still exist")
+	}
+	if foundFile.DeletedAt == nil {
 		t.Error("File should have deleted_at timestamp")
 	}
 

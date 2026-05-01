@@ -26,9 +26,17 @@ func TestFileWatcherLifecycle(t *testing.T) {
 
 	// Setup config
 	cfg := &config.Config{
-		Directories:  []string{testDir},
-		AgentDir:     ".agentfs",
-		ScanInterval: 100 * time.Millisecond,
+		Sources: []config.StorageSource{{
+			ID:      "test-local",
+			Name:    "Test Directory",
+			Type:    config.StorageTypeLocal,
+			Enabled: true,
+			Path:    testDir,
+		}},
+		AgentDir: ".agentfs",
+		Worker: config.WorkerConfig{
+			ScanInterval: 100 * time.Millisecond,
+		},
 	}
 
 	// Setup queue
@@ -221,10 +229,23 @@ func TestSupportedFileTypes(t *testing.T) {
 	tempDir := t.TempDir()
 	queueDir := filepath.Join(tempDir, "queue")
 
+	// Create queue directory
+	if err := os.MkdirAll(queueDir, 0755); err != nil {
+		t.Fatalf("Failed to create queue directory: %v", err)
+	}
+
 	cfg := &config.Config{
-		Directories:  []string{tempDir},
-		AgentDir:     ".agentfs",
-		ScanInterval: 100 * time.Millisecond,
+		Sources: []config.StorageSource{{
+			ID:      "test-local",
+			Name:    "Test Directory",
+			Type:    config.StorageTypeLocal,
+			Enabled: true,
+			Path:    tempDir,
+		}},
+		AgentDir: ".agentfs",
+		Worker: config.WorkerConfig{
+			ScanInterval: 100 * time.Millisecond,
+		},
 	}
 
 	queuePath := filepath.Join(queueDir, "test.db")
@@ -278,10 +299,23 @@ func TestPeriodicScan(t *testing.T) {
 	tempDir := t.TempDir()
 	queueDir := filepath.Join(tempDir, "queue")
 
+	// Create queue directory
+	if err := os.MkdirAll(queueDir, 0755); err != nil {
+		t.Fatalf("Failed to create queue directory: %v", err)
+	}
+
 	cfg := &config.Config{
-		Directories:  []string{tempDir},
-		AgentDir:     ".agentfs",
-		ScanInterval: 50 * time.Millisecond, // Very frequent for testing
+		Sources: []config.StorageSource{{
+			ID:      "test-local",
+			Name:    "Test Directory",
+			Type:    config.StorageTypeLocal,
+			Enabled: true,
+			Path:    tempDir,
+		}},
+		AgentDir: ".agentfs",
+		Worker: config.WorkerConfig{
+			ScanInterval: 50 * time.Millisecond, // Very frequent for testing
+		},
 	}
 
 	queuePath := filepath.Join(queueDir, "test.db")
@@ -332,10 +366,23 @@ func TestIgnoreAgentDirectories(t *testing.T) {
 	tempDir := t.TempDir()
 	queueDir := filepath.Join(tempDir, "queue")
 
+	// Create queue directory
+	if err := os.MkdirAll(queueDir, 0755); err != nil {
+		t.Fatalf("Failed to create queue directory: %v", err)
+	}
+
 	cfg := &config.Config{
-		Directories:  []string{tempDir},
-		AgentDir:     ".agentfs",
-		ScanInterval: 100 * time.Millisecond,
+		Sources: []config.StorageSource{{
+			ID:      "test-local",
+			Name:    "Test Directory",
+			Type:    config.StorageTypeLocal,
+			Enabled: true,
+			Path:    tempDir,
+		}},
+		AgentDir: ".agentfs",
+		Worker: config.WorkerConfig{
+			ScanInterval: 100 * time.Millisecond,
+		},
 	}
 
 	queuePath := filepath.Join(queueDir, "test.db")

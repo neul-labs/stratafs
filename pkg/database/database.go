@@ -619,6 +619,36 @@ func (db *DB) GetFileByPath(path string) (*File, error) {
 	)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // Return nil file and nil error when no file is found
+		}
+		return nil, err
+	}
+
+	if deletedAt.Valid {
+		file.DeletedAt = &deletedAt.Time
+	}
+
+	return file, nil
+}
+
+// GetFileByPathWithDeleted retrieves a file by its path, including soft-deleted files
+func (db *DB) GetFileByPathWithDeleted(path string) (*File, error) {
+	file := &File{}
+	var deletedAt sql.NullTime
+
+	err := db.conn.QueryRow(`
+		SELECT id, path, checksum, size, created_at, updated_at, deleted_at
+		FROM files WHERE path = ?
+	`, path).Scan(
+		&file.ID, &file.Path, &file.Checksum, &file.Size,
+		&file.CreatedAt, &file.UpdatedAt, &deletedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // Return nil file and nil error when no file is found
+		}
 		return nil, err
 	}
 
@@ -668,17 +698,41 @@ func (db *DB) GetAllFiles() ([]*File, error) {
 func (db *DB) GetChunkByID(chunkID int64) (*FileChunk, error) {
 	chunk := &FileChunk{}
 	var deletedAt sql.NullTime
+	var contentCompressed []byte
+	var isCompressed bool
+	var embeddingBytes []byte
 
 	err := db.conn.QueryRow(`
-		SELECT id, file_id, content, embedding, offset, length, created_at, updated_at, deleted_at
-		FROM chunks WHERE id = ? AND deleted_at IS NULL
+		SELECT id, file_id, content, content_compressed, is_compressed, embedding, offset, length, created_at, updated_at, deleted_at
+		FROM file_chunks WHERE id = ? AND deleted_at IS NULL
 	`, chunkID).Scan(
-		&chunk.ID, &chunk.FileID, &chunk.Content, &chunk.Embedding,
+		&chunk.ID, &chunk.FileID, &chunk.Content, &contentCompressed, &isCompressed, &embeddingBytes,
 		&chunk.Offset, &chunk.Length, &chunk.CreatedAt, &chunk.UpdatedAt, &deletedAt,
 	)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // Return nil chunk and nil error when no chunk is found
+		}
 		return nil, err
+	}
+
+	// Handle decompression if needed
+	if isCompressed && len(contentCompressed) > 0 {
+		decompressedContent, err := decompressContent(contentCompressed)
+		if err == nil {
+			chunk.Content = decompressedContent
+		}
+	}
+	chunk.IsCompressed = isCompressed
+
+	// Convert embedding bytes back to float32 slice
+	if len(embeddingBytes) > 0 {
+		chunk.Embedding = make([]float32, len(embeddingBytes)/4)
+		for i := 0; i < len(chunk.Embedding); i++ {
+			b := (*[4]byte)(unsafe.Pointer(&embeddingBytes[i*4]))
+			chunk.Embedding[i] = *(*float32)(unsafe.Pointer(&b[0]))
+		}
 	}
 
 	if deletedAt.Valid {
@@ -691,8 +745,8 @@ func (db *DB) GetChunkByID(chunkID int64) (*FileChunk, error) {
 // GetChunksByFileID retrieves all chunks for a file
 func (db *DB) GetChunksByFileID(fileID int64) ([]*FileChunk, error) {
 	rows, err := db.conn.Query(`
-		SELECT id, file_id, content, embedding, offset, length, created_at, updated_at, deleted_at
-		FROM chunks WHERE file_id = ? AND deleted_at IS NULL
+		SELECT id, file_id, content, content_compressed, is_compressed, embedding, offset, length, created_at, updated_at, deleted_at
+		FROM file_chunks WHERE file_id = ? AND deleted_at IS NULL
 		ORDER BY offset ASC
 	`, fileID)
 	if err != nil {
@@ -704,13 +758,34 @@ func (db *DB) GetChunksByFileID(fileID int64) ([]*FileChunk, error) {
 	for rows.Next() {
 		chunk := &FileChunk{}
 		var deletedAt sql.NullTime
+		var contentCompressed []byte
+		var isCompressed bool
+		var embeddingBytes []byte
 
 		err := rows.Scan(
-			&chunk.ID, &chunk.FileID, &chunk.Content, &chunk.Embedding,
+			&chunk.ID, &chunk.FileID, &chunk.Content, &contentCompressed, &isCompressed, &embeddingBytes,
 			&chunk.Offset, &chunk.Length, &chunk.CreatedAt, &chunk.UpdatedAt, &deletedAt,
 		)
 		if err != nil {
 			continue
+		}
+
+		// Handle decompression if needed
+		if isCompressed && len(contentCompressed) > 0 {
+			decompressedContent, err := decompressContent(contentCompressed)
+			if err == nil {
+				chunk.Content = decompressedContent
+			}
+		}
+		chunk.IsCompressed = isCompressed
+
+		// Convert embedding bytes back to float32 slice
+		if len(embeddingBytes) > 0 {
+			chunk.Embedding = make([]float32, len(embeddingBytes)/4)
+			for i := 0; i < len(chunk.Embedding); i++ {
+				b := (*[4]byte)(unsafe.Pointer(&embeddingBytes[i*4]))
+				chunk.Embedding[i] = *(*float32)(unsafe.Pointer(&b[0]))
+			}
 		}
 
 		if deletedAt.Valid {
