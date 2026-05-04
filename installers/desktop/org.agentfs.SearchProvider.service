@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.agentfs.SearchProvider
+Exec=/usr/bin/agentfs search-provider

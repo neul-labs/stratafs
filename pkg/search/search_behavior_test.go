@@ -2,7 +2,6 @@ package search
 
 import (
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -395,7 +394,7 @@ func TestEdgeCases(t *testing.T) {
 			"Very long query",
 			&SearchRequest{
 				Query: "this is a very long search query that contains many words and should test how the system handles lengthy input strings",
-				Mode: SearchModeFullText,
+				Mode:  SearchModeFullText,
 				Limit: 10,
 			},
 		},
@@ -449,13 +448,7 @@ func setupSearchTestEngine(t *testing.T) (*Engine, *database.DB, *embeddings.Emb
 	}
 
 	embedder, err := embeddings.NewEmbedder(cfg)
-	if err != nil {
-		// If model download fails, skip the test with a helpful message
-		if strings.Contains(err.Error(), "403 Forbidden") || strings.Contains(err.Error(), "model download failed") {
-			t.Skip("Skipping test - model download blocked, consider using local models for testing")
-		}
-		t.Fatalf("Failed to create test embedder: %v", err)
-	}
+	handleEmbedderInitError(t, err)
 
 	databases := map[string]*database.DB{
 		"/test/dir": db,

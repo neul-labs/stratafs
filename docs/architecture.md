@@ -47,6 +47,23 @@ AgentFS implements a modular, multi-storage architecture designed for scalabilit
 
 ## Core Components
 
+### Package Map
+
+| Package | Responsibility |
+| ------- | -------------- |
+| `cmd/agentfs` | CLI entry point that wires configuration, storage factories, watchers, queue workers, API, and MCP servers |
+| `pkg/config` | Default configuration, environment overrides, storage source helpers |
+| `pkg/storage` / `pkg/filesystem` | Storage factory plus filesystem abstractions (local, S3, GCS, Azure, hybrid cache) |
+| `pkg/monitor` | Local file watcher (fsnotify) and remote scanner orchestration |
+| `pkg/parsers` & `pkg/chunking` | File parsers, parser registry, and chunking strategies |
+| `pkg/queue` | Persistent SQLite-backed job queue and AgentFS processor |
+| `pkg/embeddings` | FastEmbed integration and model metadata |
+| `pkg/database` | SQLite schema, compression, maintenance, and chunk/file update helpers |
+| `pkg/search` | Hybrid search (FTS + vector) and vector index management |
+| `pkg/api` / `pkg/protocol` | HTTP REST API and Model Context Protocol server |
+
+Supporting utilities live in `internal/utils`, while deployment tooling (helm charts, Dockerfiles, installers) resides in their respective top-level directories.
+
 ### 1. Storage Layer
 
 #### Storage Factory

@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -240,7 +242,10 @@ func (rs *RemoteScanner) hasFileChanged(scanner *sourceScanner, path string, inf
 // queueFileForProcessing downloads the file to cache and queues it for processing
 func (rs *RemoteScanner) queueFileForProcessing(scanner *sourceScanner, remotePath string, info filesystem.FileInfo) error {
 	// Get the local cache path for this file
-	cachePath := rs.getCachePath(scanner.source, remotePath)
+	cachePath, err := rs.getCachePath(scanner.source, remotePath)
+	if err != nil {
+		return fmt.Errorf("invalid remote path %s: %w", remotePath, err)
+	}
 
 	// Ensure cache directory exists
 	cacheDir := filepath.Dir(cachePath)
@@ -263,7 +268,7 @@ func (rs *RemoteScanner) queueFileForProcessing(scanner *sourceScanner, remotePa
 	payloadJSON, _ := json.Marshal(payload)
 
 	// Queue the processing job
-	_, err := rs.queue.AddJob(queue.JobTypeParse, cachePath, scanner.source.ID, 3, string(payloadJSON))
+	_, err = rs.queue.AddJob(queue.JobTypeParse, cachePath, scanner.source.ID, 3, string(payloadJSON))
 	if err != nil {
 		// Clean up cache file if queueing fails
 		os.Remove(cachePath)
@@ -298,14 +303,43 @@ func (rs *RemoteScanner) downloadFileToCache(fs filesystem.FileSystem, remotePat
 }
 
 // getCachePath returns the local cache path for a remote file
-func (rs *RemoteScanner) getCachePath(source config.StorageSource, remotePath string) string {
-	return filepath.Join(source.LocalCacheDir, remotePath)
+func (rs *RemoteScanner) getCachePath(source config.StorageSource, remotePath string) (string, error) {
+	sanitized, err := sanitizeRemotePath(remotePath)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(source.LocalCacheDir, sanitized), nil
 }
 
 // isHiddenFile checks if a file/directory is hidden
 func isHiddenFile(path string) bool {
 	base := filepath.Base(path)
 	return len(base) > 0 && base[0] == '.'
+}
+
+// sanitizeRemotePath ensures the remote path cannot escape the local cache directory
+func sanitizeRemotePath(remotePath string) (string, error) {
+	cleaned := path.Clean(remotePath)
+	cleaned = strings.ReplaceAll(cleaned, "\\", "/")
+
+	for strings.HasPrefix(cleaned, "./") {
+		cleaned = strings.TrimPrefix(cleaned, "./")
+	}
+
+	if cleaned == "." || cleaned == "" {
+		return "", fmt.Errorf("remote path cannot be empty")
+	}
+	if cleaned == ".." || strings.HasPrefix(cleaned, "../") {
+		return "", fmt.Errorf("remote path escapes cache")
+	}
+	if strings.HasPrefix(cleaned, "/") {
+		cleaned = strings.TrimPrefix(cleaned, "/")
+		if cleaned == "" {
+			return "", fmt.Errorf("remote path cannot be root")
+		}
+	}
+
+	return filepath.FromSlash(cleaned), nil
 }
 
 // Stop stops all remote scanning

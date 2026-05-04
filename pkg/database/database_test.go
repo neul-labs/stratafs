@@ -198,6 +198,28 @@ func TestFindChunksByFileID(t *testing.T) {
 	}
 }
 
+func TestListFiles(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	_, err := db.UpsertFile("/test/one.txt", "c1", 10)
+	if err != nil {
+		t.Fatalf("failed to create file 1: %v", err)
+	}
+	_, err = db.UpsertFile("/test/two.txt", "c2", 20)
+	if err != nil {
+		t.Fatalf("failed to create file 2: %v", err)
+	}
+
+	files, err := db.ListFiles(false)
+	if err != nil {
+		t.Fatalf("ListFiles failed: %v", err)
+	}
+	if len(files) != 2 {
+		t.Fatalf("expected 2 files, got %d", len(files))
+	}
+}
+
 func TestSoftDelete(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
@@ -358,11 +380,11 @@ func setupTestDB(t *testing.T) *DB {
 // contains checks if a string contains a substring (case insensitive)
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) &&
-		   (s == substr ||
-		    len(s) > len(substr) &&
-		    (s[:len(substr)] == substr ||
-		     s[len(s)-len(substr):] == substr ||
-		     containsHelper(s, substr)))
+		(s == substr ||
+			len(s) > len(substr) &&
+				(s[:len(substr)] == substr ||
+					s[len(s)-len(substr):] == substr ||
+					containsHelper(s, substr)))
 }
 
 func containsHelper(s, substr string) bool {

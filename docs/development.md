@@ -51,27 +51,25 @@ go build -o build/agentfs -tags "fts5" ./cmd/agentfs
 
 ```
 agentfs/
-├── cmd/agentfs/          # Main application entry point
-├── pkg/                  # Public packages
-│   ├── config/           # Configuration management
-│   ├── monitor/          # File monitoring and remote scanning
-│   ├── storage/          # Storage factory and backends
-│   ├── filesystem/       # Filesystem abstraction
-│   ├── database/         # SQLite database operations
-│   ├── embeddings/       # FastEmbed integration
-│   ├── search/           # Hybrid search engine
-│   ├── queue/            # Job processing system
-│   ├── api/              # REST API server
-│   ├── protocol/         # Model Context Protocol
-│   ├── parsers/          # File parsing system
-│   └── chunking/         # Text chunking strategies
-├── internal/             # Private packages
-│   ├── utils/            # Utility functions
-│   └── models/           # Data models
-├── docs/                 # Documentation
-├── examples/             # Example configurations
-├── scripts/              # Build and utility scripts
-└── tests/                # Integration tests
+├── cmd/agentfs/        # CLI entry point
+├── internal/utils/     # Private helpers (not exported)
+├── pkg/                # Reusable libraries
+│   ├── api/            # REST server
+│   ├── chunking/       # Chunking strategies
+│   ├── config/         # Config management
+│   ├── database/       # SQLite schema helpers
+│   ├── embeddings/     # FastEmbed integration
+│   ├── filesystem/     # Filesystem abstraction + impls
+│   ├── monitor/        # File watcher + remote scanner
+│   ├── parsers/        # Parser registry/implementations
+│   ├── protocol/       # MCP server
+│   ├── queue/          # Job queue + processor
+│   ├── search/         # Hybrid search engine
+│   └── storage/        # Storage factory/backends
+├── docs/               # Architecture/API/dev guides
+├── docker/, helm/, installers/  # Deployment tooling
+├── models/, build/     # Optional bundled assets/binaries
+└── scripts/            # Build/test utilities
 ```
 
 ## Build System
@@ -112,7 +110,41 @@ make build-all
 go build -tags "fts5,debug" -o build/agentfs ./cmd/agentfs
 ```
 
+### ONNX Runtime helper
+FastEmbed requires ONNX Runtime. For local development run:
+```bash
+make fetch-onnx    # downloads ONNX Runtime for your host into build/onnx/<os>-<arch>
+make build
+```
+Set `ONNX_VERSION`, `TARGET_OS`, or `TARGET_ARCH` to override defaults (useful when cross-compiling or matching CI).
+
+### Release builds
+To produce cross-platform release archives (Linux/macOS/Windows for amd64/arm64, with the matching ONNX Runtime libraries bundled):
+```bash
+make release
+# or VERSION=0.3.0 ONNX_VERSION=1.17.0 make release
+```
+Artifacts are written to `build/release/` and include the binary plus the required ONNX Runtime libraries.
+
+### Desktop UI (Wails) roadmap
+We are adding a Wails-powered desktop control panel so non-CLI users can manage AgentFS without touching the REST API directly:
+- **Linux (current sprint)**: build `cmd/agentfs-ui` via Wails, package it together with the daemon as an AppImage/Deb, and install a systemd user service to keep the daemon running. The UI surfaces source management, queue health, and filesystem exports.
+- **macOS**: deliver a signed `.app` bundle (Wails UI) plus a LaunchAgent for the daemon, with future integration to macFUSE for mounts.
+- **Windows**: provide an installer with a tray app (Wails) and register the daemon as a Windows Service/run-on-login task, bundling ONNX runtime DLLs/WinFsp when needed.
+
+Follow `docs/roadmap.md` for progress; the CLI/REST/MCP interfaces remain fully supported.
+
+### Full test suite with ONNX Runtime
+To run all tests (including `pkg/search`) against the native runtime:
+```bash
+make test-onnx
+# customize the runtime if needed
+ONNX_VERSION=1.17.0 TARGET_OS=linux TARGET_ARCH=amd64 make test-onnx
+```
+
 ## Testing
+
+> **Note:** The `pkg/search` suite depends on FastEmbed + ONNX Runtime. Those tests automatically skip when the native libraries are unavailable so the rest of the modules can still be exercised (e.g. CI sandboxes). Install ONNX Runtime if you want to run the full search suite locally.
 
 ### Running Tests
 ```bash

@@ -27,10 +27,13 @@ const (
 type StorageType string
 
 const (
-	StorageTypeLocal StorageType = "local"
-	StorageTypeS3    StorageType = "s3"
-	StorageTypeGCS   StorageType = "gcs"
-	StorageTypeAzure StorageType = "azure"
+	StorageTypeLocal      StorageType = "local"
+	StorageTypeS3         StorageType = "s3"
+	StorageTypeGCS        StorageType = "gcs"
+	StorageTypeAzure      StorageType = "azure"
+	StorageTypeSharePoint StorageType = "sharepoint"
+	StorageTypeGoogleDrive StorageType = "google-drive"
+	StorageTypeJira       StorageType = "jira"
 )
 
 // StorageSource represents a configured storage source
@@ -153,22 +156,25 @@ func DefaultConfig() *Config {
 		},
 	}
 
+	sources := []StorageSource{defaultSource}
+
 	// Add any environment-specified directories as additional sources
 	if dirs := os.Getenv("AGENTFS_DIRS"); dirs != "" {
 		additionalPaths := strings.Split(dirs, ",")
 		for i, path := range additionalPaths {
 			cleanPath := filepath.Clean(path)
-			if cleanPath != wd { // Don't duplicate the default source
-				additionalSource := StorageSource{
-					ID:      fmt.Sprintf("env-local-%d", i),
-					Name:    fmt.Sprintf("Environment Directory %d", i+1),
-					Type:    StorageTypeLocal,
-					Enabled: true,
-					Path:    cleanPath,
-					Filters: defaultSource.Filters, // Use same filters as default
-				}
-				defaultSource = additionalSource // We'll add both in the sources slice
+			if cleanPath == wd {
+				continue // skip duplicates
 			}
+			additionalSource := StorageSource{
+				ID:      fmt.Sprintf("env-local-%d", i),
+				Name:    fmt.Sprintf("Environment Directory %d", i+1),
+				Type:    StorageTypeLocal,
+				Enabled: true,
+				Path:    cleanPath,
+				Filters: defaultSource.Filters, // Use same filters as default
+			}
+			sources = append(sources, additionalSource)
 		}
 	}
 
@@ -176,7 +182,7 @@ func DefaultConfig() *Config {
 		Version:   "0.2.0",
 		AgentDir:  ".agentfs",
 		GlobalDir: globalDir,
-		Sources:   []StorageSource{defaultSource},
+		Sources:   sources,
 		Server: ServerConfig{
 			APIPort: 8080,
 			MCPPort: 8081,
@@ -581,4 +587,3 @@ func GetModelDimension(model FastEmbedModel) int {
 		return 384 // Default to smaller dimension
 	}
 }
-

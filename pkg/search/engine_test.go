@@ -2,7 +2,6 @@ package search
 
 import (
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"agentfs/pkg/config"
@@ -161,7 +160,6 @@ func setupTestDB(t *testing.T) *database.DB {
 	return db
 }
 
-
 func setupTestEmbedder(t *testing.T) *embeddings.Embedder {
 	tempDir := t.TempDir()
 
@@ -174,13 +172,7 @@ func setupTestEmbedder(t *testing.T) *embeddings.Embedder {
 	}
 
 	embedder, err := embeddings.NewEmbedder(cfg)
-	if err != nil {
-		// If model download fails, skip the test with a helpful message
-		if strings.Contains(err.Error(), "403 Forbidden") || strings.Contains(err.Error(), "model download failed") {
-			t.Skip("Skipping test - model download blocked, consider using local models for testing")
-		}
-		t.Fatalf("Failed to create test embedder: %v", err)
-	}
+	handleEmbedderInitError(t, err)
 
 	return embedder
 }

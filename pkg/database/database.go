@@ -10,8 +10,8 @@ import (
 	"time"
 	"unsafe"
 
-	_ "github.com/mattn/go-sqlite3"
 	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // DB represents a connection to the agentfs SQLite database
@@ -128,7 +128,7 @@ func (db *DB) initSchema() error {
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			deleted_at DATETIME NULL
 		)`,
-		
+
 		`CREATE TABLE IF NOT EXISTS file_chunks (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			file_id INTEGER NOT NULL,
@@ -143,14 +143,14 @@ func (db *DB) initSchema() error {
 			deleted_at DATETIME NULL,
 			FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE
 		)`,
-		
+
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_chunks_file_offset ON file_chunks (file_id, offset)`,
 		`CREATE INDEX IF NOT EXISTS idx_files_path ON files (path)`,
 		`CREATE INDEX IF NOT EXISTS idx_files_deleted_at ON files (deleted_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_chunks_file_id ON file_chunks (file_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_chunks_deleted_at ON file_chunks (deleted_at)`,
 	}
-	
+
 	for _, query := range queries {
 		if _, err := db.conn.Exec(query); err != nil {
 			return fmt.Errorf("failed to execute query: %s, error: %w", query, err)
@@ -210,13 +210,13 @@ func (db *DB) enableFTS() error {
 		// If it's a different error, return it
 		return fmt.Errorf("failed to create FTS test table: %w", err)
 	}
-	
+
 	// If we successfully created the test table, drop it and proceed
 	_, err = db.conn.Exec(`DROP TABLE IF EXISTS fts_test`)
 	if err != nil {
 		return fmt.Errorf("failed to drop FTS test table: %w", err)
 	}
-	
+
 	// Enable full-text search
 	ftsQueries := []string{
 		`CREATE VIRTUAL TABLE IF NOT EXISTS file_chunks_fts USING fts5(
@@ -224,29 +224,29 @@ func (db *DB) enableFTS() error {
 			content='file_chunks',
 			content_rowid='id'
 		)`,
-		
+
 		`CREATE TRIGGER IF NOT EXISTS file_chunks_ai AFTER INSERT ON file_chunks BEGIN
 			INSERT INTO file_chunks_fts(rowid, content) VALUES (new.id, new.content);
 		END`,
-		
+
 		`CREATE TRIGGER IF NOT EXISTS file_chunks_ad AFTER DELETE ON file_chunks BEGIN
 			INSERT INTO file_chunks_fts(file_chunks_fts, rowid, content) 
 			VALUES('delete', old.id, old.content);
 		END`,
-		
+
 		`CREATE TRIGGER IF NOT EXISTS file_chunks_au AFTER UPDATE ON file_chunks BEGIN
 			INSERT INTO file_chunks_fts(file_chunks_fts, rowid, content) 
 			VALUES('delete', old.id, old.content);
 			INSERT INTO file_chunks_fts(rowid, content) VALUES (new.id, new.content);
 		END`,
 	}
-	
+
 	for _, query := range ftsQueries {
 		if _, err := db.conn.Exec(query); err != nil {
 			return fmt.Errorf("failed to create FTS table/triggers: %w", err)
 		}
 	}
-	
+
 	fmt.Println("FTS5 enabled successfully")
 	return nil
 }
@@ -263,36 +263,36 @@ func (db *DB) UpsertFile(path, checksum string, size int64) (*File, error) {
 			deleted_at=NULL
 		RETURNING id, path, checksum, size, created_at, updated_at, deleted_at
 	`
-	
+
 	var file File
 	var deletedAt *string
-	
+
 	err := db.conn.QueryRow(query, path, checksum, size).Scan(
 		&file.ID, &file.Path, &file.Checksum, &file.Size,
 		&file.CreatedAt, &file.UpdatedAt, &deletedAt,
 	)
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to upsert file: %w", err)
 	}
-	
+
 	if deletedAt != nil {
 		parsedTime, _ := time.Parse("2006-01-02 15:04:05", *deletedAt)
 		file.DeletedAt = &parsedTime
 	}
-	
+
 	return &file, nil
 }
 
 // SoftDeleteFile marks a file as deleted
 func (db *DB) SoftDeleteFile(path string) error {
 	query := `UPDATE files SET deleted_at=CURRENT_TIMESTAMP WHERE path=?`
-	
+
 	_, err := db.conn.Exec(query, path)
 	if err != nil {
 		return fmt.Errorf("failed to soft delete file: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -358,7 +358,7 @@ func (db *DB) UpsertChunk(fileID int64, content string, embedding []float32, off
 			return nil, fmt.Errorf("failed to insert chunk: %w", err)
 		}
 	}
-	
+
 	// Retrieve the chunk
 	var chunk FileChunk
 	var deletedAt *string
@@ -385,7 +385,7 @@ func (db *DB) UpsertChunk(fileID int64, content string, embedding []float32, off
 		}
 		chunk.Content = decompressed
 	}
-	
+
 	// Convert embedding bytes back to float32 slice
 	if len(embeddingBytesResult) > 0 {
 		chunk.Embedding = make([]float32, len(embeddingBytesResult)/4)
@@ -394,24 +394,24 @@ func (db *DB) UpsertChunk(fileID int64, content string, embedding []float32, off
 			chunk.Embedding[i] = *(*float32)(unsafe.Pointer(&b[0]))
 		}
 	}
-	
+
 	if deletedAt != nil {
 		parsedTime, _ := time.Parse("2006-01-02 15:04:05", *deletedAt)
 		chunk.DeletedAt = &parsedTime
 	}
-	
+
 	return &chunk, nil
 }
 
 // SoftDeleteChunksByFileID marks all chunks for a file as deleted
 func (db *DB) SoftDeleteChunksByFileID(fileID int64) error {
 	query := `UPDATE file_chunks SET deleted_at=CURRENT_TIMESTAMP WHERE file_id=?`
-	
+
 	_, err := db.conn.Exec(query, fileID)
 	if err != nil {
 		return fmt.Errorf("failed to soft delete chunks: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -424,7 +424,7 @@ func (db *DB) SearchChunks(query string, limit int) ([]FileChunk, error) {
 		fmt.Printf("FTS search failed, falling back to LIKE search: %v\n", err)
 		return db.searchChunksLike(query, limit)
 	}
-	
+
 	return chunks, nil
 }
 
@@ -436,7 +436,7 @@ func (db *DB) searchChunksFTS(query string, limit int) ([]FileChunk, error) {
 	if err != nil || count == 0 {
 		return nil, fmt.Errorf("FTS table not available")
 	}
-	
+
 	sqlQuery := `
 		SELECT fc.id, fc.file_id, fc.content, fc.embedding, fc.offset, fc.length, 
 		       fc.created_at, fc.updated_at, fc.deleted_at
@@ -446,28 +446,28 @@ func (db *DB) searchChunksFTS(query string, limit int) ([]FileChunk, error) {
 		ORDER BY rank
 		LIMIT ?
 	`
-	
+
 	rows, err := db.conn.Query(sqlQuery, query, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search chunks: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var chunks []FileChunk
 	for rows.Next() {
 		var chunk FileChunk
 		var deletedAt *string
 		var embeddingBytes []byte
-		
+
 		err := rows.Scan(
 			&chunk.ID, &chunk.FileID, &chunk.Content, &embeddingBytes,
 			&chunk.Offset, &chunk.Length, &chunk.CreatedAt, &chunk.UpdatedAt, &deletedAt,
 		)
-		
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan chunk: %w", err)
 		}
-		
+
 		// Convert embedding bytes back to float32 slice
 		if len(embeddingBytes) > 0 {
 			chunk.Embedding = make([]float32, len(embeddingBytes)/4)
@@ -476,15 +476,15 @@ func (db *DB) searchChunksFTS(query string, limit int) ([]FileChunk, error) {
 				chunk.Embedding[i] = *(*float32)(unsafe.Pointer(&b[0]))
 			}
 		}
-		
+
 		if deletedAt != nil {
 			parsedTime, _ := time.Parse("2006-01-02 15:04:05", *deletedAt)
 			chunk.DeletedAt = &parsedTime
 		}
-		
+
 		chunks = append(chunks, chunk)
 	}
-	
+
 	return chunks, nil
 }
 
@@ -497,31 +497,31 @@ func (db *DB) searchChunksLike(query string, limit int) ([]FileChunk, error) {
 		WHERE content LIKE ? AND deleted_at IS NULL
 		LIMIT ?
 	`
-	
+
 	// Add wildcards for LIKE search
 	likeQuery := "%" + query + "%"
-	
+
 	rows, err := db.conn.Query(sqlQuery, likeQuery, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search chunks: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var chunks []FileChunk
 	for rows.Next() {
 		var chunk FileChunk
 		var deletedAt *string
 		var embeddingBytes []byte
-		
+
 		err := rows.Scan(
 			&chunk.ID, &chunk.FileID, &chunk.Content, &embeddingBytes,
 			&chunk.Offset, &chunk.Length, &chunk.CreatedAt, &chunk.UpdatedAt, &deletedAt,
 		)
-		
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan chunk: %w", err)
 		}
-		
+
 		// Convert embedding bytes back to float32 slice
 		if len(embeddingBytes) > 0 {
 			chunk.Embedding = make([]float32, len(embeddingBytes)/4)
@@ -530,15 +530,15 @@ func (db *DB) searchChunksLike(query string, limit int) ([]FileChunk, error) {
 				chunk.Embedding[i] = *(*float32)(unsafe.Pointer(&b[0]))
 			}
 		}
-		
+
 		if deletedAt != nil {
 			parsedTime, _ := time.Parse("2006-01-02 15:04:05", *deletedAt)
 			chunk.DeletedAt = &parsedTime
 		}
-		
+
 		chunks = append(chunks, chunk)
 	}
-	
+
 	return chunks, nil
 }
 
@@ -548,13 +548,13 @@ func (db *DB) Compact() error {
 		`DELETE FROM file_chunks WHERE deleted_at IS NOT NULL AND deleted_at < datetime('now', '-1 day')`,
 		`DELETE FROM files WHERE deleted_at IS NOT NULL AND deleted_at < datetime('now', '-1 day')`,
 	}
-	
+
 	for _, query := range queries {
 		if _, err := db.conn.Exec(query); err != nil {
 			return fmt.Errorf("failed to compact database: %w", err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -798,6 +798,39 @@ func (db *DB) GetChunksByFileID(fileID int64) ([]*FileChunk, error) {
 	return chunks, nil
 }
 
+// ListFiles returns all files (optionally including soft-deleted ones).
+func (db *DB) ListFiles(includeDeleted bool) ([]*File, error) {
+	query := `
+		SELECT id, path, checksum, size, created_at, updated_at, deleted_at
+		FROM files
+	`
+	if !includeDeleted {
+		query += " WHERE deleted_at IS NULL"
+	}
+	query += " ORDER BY path"
+
+	rows, err := db.conn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var files []*File
+	for rows.Next() {
+		file := &File{}
+		var deletedAt sql.NullTime
+		if err := rows.Scan(&file.ID, &file.Path, &file.Checksum, &file.Size, &file.CreatedAt, &file.UpdatedAt, &deletedAt); err != nil {
+			return nil, err
+		}
+		if deletedAt.Valid {
+			file.DeletedAt = &deletedAt.Time
+		}
+		files = append(files, file)
+	}
+
+	return files, rows.Err()
+}
+
 // GetConn returns the underlying SQL database connection
 func (db *DB) GetConn() *sql.DB {
 	return db.conn
@@ -810,9 +843,9 @@ func (db *DB) Close() error {
 
 // MaintenanceOptions configures database maintenance operations
 type MaintenanceOptions struct {
-	CleanupDeleted   bool // Remove soft-deleted records older than threshold
-	CompactDatabase  bool // Run VACUUM to reclaim space
-	ReindexTables    bool // Rebuild indexes for optimal performance
+	CleanupDeleted   bool          // Remove soft-deleted records older than threshold
+	CompactDatabase  bool          // Run VACUUM to reclaim space
+	ReindexTables    bool          // Rebuild indexes for optimal performance
 	DeletedThreshold time.Duration // Age threshold for cleaning up deleted records
 }
 
@@ -868,14 +901,14 @@ func (db *DB) PerformMaintenance(opts MaintenanceOptions) (*MaintenanceStats, er
 
 // MaintenanceStats contains statistics from maintenance operations
 type MaintenanceStats struct {
-	StartTime        time.Time
-	EndTime          time.Time
-	Duration         time.Duration
-	DeletedFiles     int64
-	DeletedChunks    int64
-	SizeBeforeBytes  int64
-	SizeAfterBytes   int64
-	ReindexedTables  bool
+	StartTime       time.Time
+	EndTime         time.Time
+	Duration        time.Duration
+	DeletedFiles    int64
+	DeletedChunks   int64
+	SizeBeforeBytes int64
+	SizeAfterBytes  int64
+	ReindexedTables bool
 }
 
 // SpaceSaved returns the amount of space saved in bytes
@@ -1011,10 +1044,10 @@ func (db *DB) GetDatabaseStats() (*DatabaseStats, error) {
 
 // DatabaseStats contains current database statistics
 type DatabaseStats struct {
-	ActiveFiles        int64
-	DeletedFiles       int64
-	ActiveChunks       int64
-	DeletedChunks      int64
-	CompressedChunks   int64
-	DatabaseSizeBytes  int64
+	ActiveFiles       int64
+	DeletedFiles      int64
+	ActiveChunks      int64
+	DeletedChunks     int64
+	CompressedChunks  int64
+	DatabaseSizeBytes int64
 }

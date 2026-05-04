@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +12,6 @@ import (
 	"agentfs/pkg/chunking"
 	"agentfs/pkg/config"
 	"agentfs/pkg/database"
-	"agentfs/pkg/embeddings"
 	"agentfs/pkg/filesystem"
 	"agentfs/pkg/parsers"
 	"agentfs/pkg/search"
@@ -27,20 +25,25 @@ type FileInfo struct {
 	Checksum     string    `json:"checksum"`
 }
 
+// TextEmbedder abstracts embedding generation for easier testing
+type TextEmbedder interface {
+	Embed(text string) ([]float32, error)
+}
+
 // AgentFSProcessor processes AgentFS jobs
 type AgentFSProcessor struct {
-	config        *config.Config
-	databases     map[string]*database.DB
-	embedder      *embeddings.Embedder
-	filesystem    filesystem.FileSystem
-	queue         *Queue
-	searchEngine  *search.Engine
+	config          *config.Config
+	databases       map[string]*database.DB
+	embedder        TextEmbedder
+	filesystem      filesystem.FileSystem
+	queue           *Queue
+	searchEngine    *search.Engine
 	chunkingService *chunking.ChunkingService
 	updateManagers  map[string]*database.FileUpdateManager
 }
 
 // NewAgentFSProcessor creates a new processor
-func NewAgentFSProcessor(cfg *config.Config, databases map[string]*database.DB, embedder *embeddings.Embedder, queue *Queue, searchEngine *search.Engine) *AgentFSProcessor {
+func NewAgentFSProcessor(cfg *config.Config, databases map[string]*database.DB, embedder TextEmbedder, queue *Queue, searchEngine *search.Engine) *AgentFSProcessor {
 	// Initialize update managers for each database
 	updateManagers := make(map[string]*database.FileUpdateManager)
 	for dbID, db := range databases {
@@ -138,38 +141,8 @@ func (p *AgentFSProcessor) processParseJob(ctx context.Context, job *Job) error 
 		return fmt.Errorf("database not found for directory: %s", job.DirectoryID)
 	}
 
-	// Open and parse the file
-	file, err := p.filesystem.Open(job.FilePath)
-	if err != nil {
-		return fmt.Errorf("failed to open file: %w", err)
-	}
-	defer file.Close()
-
-	// Get appropriate parser
-	parser := parsers.GetParser(job.FilePath)
-	if parser == nil {
-		return fmt.Errorf("unsupported file type for parsing: %s", job.FilePath)
-	}
-
-	// Parse content
-	content, err := parser.Parse(file)
-	if err != nil {
-		return fmt.Errorf("failed to parse file: %w", err)
-	}
-
-	// Skip empty files
-	if len(content) == 0 {
-		// Clean up cached file if this was a remote file
-		if shouldCleanup {
-			if err := os.Remove(job.FilePath); err != nil {
-				fmt.Printf("Warning: failed to clean up cached file %s: %v\n", job.FilePath, err)
-			}
-		}
-		return nil
-	}
-
 	// Process content using streaming chunking
-	err = p.processContentStreaming(job.DirectoryID, job.FilePath, fileInfo, file)
+	err := p.processContentStreaming(job.DirectoryID, job.FilePath, fileInfo)
 	if err != nil {
 		return fmt.Errorf("failed to process content: %w", err)
 	}
@@ -300,16 +273,21 @@ func (p *AgentFSProcessor) markFileDeleted(directoryID, filePath string) error {
 }
 
 // processContentStreaming processes file content using streaming chunking and embeddings
-func (p *AgentFSProcessor) processContentStreaming(directoryID, filePath string, fileInfo FileInfo, file io.ReadCloser) error {
-	defer file.Close()
-
+func (p *AgentFSProcessor) processContentStreaming(directoryID, filePath string, fileInfo FileInfo) error {
 	// Get appropriate parser
 	parser := parsers.GetParser(filePath)
 	if parser == nil {
 		return fmt.Errorf("unsupported file type for parsing: %s", filePath)
 	}
 
-	// Parse content
+	// Open the file for parsing
+	file, err := p.filesystem.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	// Parse content once
 	content, err := parser.Parse(file)
 	if err != nil {
 		return fmt.Errorf("failed to parse file: %w", err)
@@ -318,19 +296,6 @@ func (p *AgentFSProcessor) processContentStreaming(directoryID, filePath string,
 	// Skip empty files
 	if len(content) == 0 {
 		return nil
-	}
-
-	// Reopen file for chunking (since parser consumed it)
-	file, err = p.filesystem.Open(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to reopen file for chunking: %w", err)
-	}
-	defer file.Close()
-
-	// Parse again for chunking (optimization: could cache parsed content)
-	content, err = parser.Parse(file)
-	if err != nil {
-		return fmt.Errorf("failed to reparse file for chunking: %w", err)
 	}
 
 	// Get file extension for chunking strategy

@@ -48,3 +48,15 @@ fmt: ## Format code
 .PHONY: test
 test: ## Run tests with FTS5 support
 	go test -tags "fts5" -v ./...
+
+.PHONY: fetch-onnx
+fetch-onnx: ## Download the ONNX Runtime for the host platform (for local builds)
+	bash scripts/get-onnx-runtime.sh
+
+.PHONY: test-onnx
+test-onnx: ## Run the full test suite with ONNX Runtime enabled
+	bash scripts/test-with-onnx.sh
+
+.PHONY: release
+release: ## Build cross-platform release artifacts with bundled ONNX Runtime
+	bash scripts/build-release.sh

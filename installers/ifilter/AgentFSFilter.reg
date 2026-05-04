@@ -1,0 +1,65 @@
+Windows Registry Editor Version 5.00
+
+; AgentFS IFilter Registration
+; Run as Administrator: regedit /s AgentFSFilter.reg
+
+; CLSID registration
+[HKEY_CLASSES_ROOT\CLSID\{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}]
+@="AgentFS Search Filter"
+
+[HKEY_CLASSES_ROOT\CLSID\{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}\InprocServer32]
+@="C:\\Program Files\\AgentFS\\AgentFSFilter.dll"
+"ThreadingModel"="Both"
+
+[HKEY_CLASSES_ROOT\CLSID\{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+; File extension associations
+; Markdown
+[HKEY_CLASSES_ROOT\.md\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+; Source code
+[HKEY_CLASSES_ROOT\.go\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+[HKEY_CLASSES_ROOT\.py\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+[HKEY_CLASSES_ROOT\.js\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+[HKEY_CLASSES_ROOT\.ts\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+[HKEY_CLASSES_ROOT\.rs\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+[HKEY_CLASSES_ROOT\.java\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+[HKEY_CLASSES_ROOT\.c\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+[HKEY_CLASSES_ROOT\.cpp\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+[HKEY_CLASSES_ROOT\.h\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+; Config files
+[HKEY_CLASSES_ROOT\.json\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+[HKEY_CLASSES_ROOT\.yaml\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+[HKEY_CLASSES_ROOT\.yml\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+[HKEY_CLASSES_ROOT\.toml\PersistentHandler]
+@="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+
+; ContentIndexVolumeMax - allow indexing
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Search\ContentIndexCommon]
+"MaxGatherThreads"=dword:00000004

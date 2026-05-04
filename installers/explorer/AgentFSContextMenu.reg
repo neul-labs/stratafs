@@ -1,0 +1,28 @@
+Windows Registry Editor Version 5.00
+
+; AgentFS Explorer Context Menu Extension
+; Run as Administrator: regedit /s AgentFSContextMenu.reg
+
+; CLSID registration
+[HKEY_CLASSES_ROOT\CLSID\{B2C3D4E5-F6A7-8901-BCDE-F23456789012}]
+@="AgentFS Context Menu"
+
+[HKEY_CLASSES_ROOT\CLSID\{B2C3D4E5-F6A7-8901-BCDE-F23456789012}\InprocServer32]
+@="C:\\Program Files\\AgentFS\\AgentFSContextMenu.dll"
+"ThreadingModel"="Apartment"
+
+; Register for all files
+[HKEY_CLASSES_ROOT\*\shellex\ContextMenuHandlers\AgentFS]
+@="{B2C3D4E5-F6A7-8901-BCDE-F23456789012}"
+
+; Register for directories
+[HKEY_CLASSES_ROOT\Directory\shellex\ContextMenuHandlers\AgentFS]
+@="{B2C3D4E5-F6A7-8901-BCDE-F23456789012}"
+
+; Register for directory background
+[HKEY_CLASSES_ROOT\Directory\Background\shellex\ContextMenuHandlers\AgentFS]
+@="{B2C3D4E5-F6A7-8901-BCDE-F23456789012}"
+
+; Approve the extension (required for some Windows versions)
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved]
+"{B2C3D4E5-F6A7-8901-BCDE-F23456789012}"="AgentFS Context Menu"

@@ -7,6 +7,7 @@ set -e
 VERSION="${VERSION:-$(git describe --tags --always)}"
 BUILD_DIR="build/release"
 BINARY_NAME="agentfs"
+ONNX_VERSION="${ONNX_VERSION:-1.16.3}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -101,13 +102,12 @@ download_onnx_runtime() {
             ;;
     esac
 
-    local onnx_version="1.16.3"
-    local onnx_name="onnxruntime-${os_name}-${onnx_arch}-${onnx_version}"
-    local onnx_url="https://github.com/microsoft/onnxruntime/releases/download/v${onnx_version}/${onnx_name}.tgz"
+    local onnx_name="onnxruntime-${os_name}-${onnx_arch}-${ONNX_VERSION}"
+    local onnx_url="https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/${onnx_name}.tgz"
     local onnx_dir="build/onnx/${platform}-${arch}"
 
     if [ "$platform" = "windows" ]; then
-        onnx_url="https://github.com/microsoft/onnxruntime/releases/download/v${onnx_version}/${onnx_name}.zip"
+        onnx_url="https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/${onnx_name}.zip"
     fi
 
     if [ -d "$onnx_dir" ]; then
@@ -115,7 +115,7 @@ download_onnx_runtime() {
         return 0
     fi
 
-    print_info "Downloading ONNX Runtime for $platform-$arch..."
+    print_info "Downloading ONNX Runtime $ONNX_VERSION for $platform-$arch..."
     mkdir -p "$onnx_dir"
 
     if [ "$platform" = "windows" ]; then
@@ -163,11 +163,17 @@ build_binary() {
     # Set up ONNX Runtime paths if available
     local onnx_dir="build/onnx/${platform}-${arch}"
     if [ -d "$onnx_dir" ]; then
-        if [ "$platform" = "windows" ]; then
-            export CGO_CFLAGS="-I$PWD/$onnx_dir/include"
-            export CGO_LDFLAGS="-L$PWD/$onnx_dir/lib -lonnxruntime"
+        local rpath_flag=""
+        if [ "$platform" = "darwin" ]; then
+            rpath_flag="-Wl,-rpath,@executable_path/lib"
+        elif [ "$platform" = "linux" ]; then
+            rpath_flag="-Wl,-rpath,\$ORIGIN/lib"
+        fi
+
+        export CGO_CFLAGS="-I$PWD/$onnx_dir/include"
+        if [ -n "$rpath_flag" ]; then
+            export CGO_LDFLAGS="-L$PWD/$onnx_dir/lib -lonnxruntime $rpath_flag"
         else
-            export CGO_CFLAGS="-I$PWD/$onnx_dir/include"
             export CGO_LDFLAGS="-L$PWD/$onnx_dir/lib -lonnxruntime"
         fi
     else
@@ -190,13 +196,16 @@ build_binary() {
     fi
 
     # Copy ONNX Runtime libraries if available
-    if [ -d "$onnx_dir" ] && [ "$platform" != "windows" ]; then
-        if [ -d "$onnx_dir/lib" ]; then
-            cp -r "$onnx_dir/lib" "$output_dir/"
-        fi
-    elif [ -d "$onnx_dir" ] && [ "$platform" = "windows" ]; then
-        if [ -d "$onnx_dir/lib" ]; then
+    if [ -d "$onnx_dir/lib" ]; then
+        if [ "$platform" = "windows" ]; then
             cp "$onnx_dir/lib"/*.dll "$output_dir/" 2>/dev/null || true
+        else
+            mkdir -p "$output_dir/lib"
+            if [ "$platform" = "darwin" ]; then
+                cp "$onnx_dir/lib"/*.dylib "$output_dir/lib/" 2>/dev/null || true
+            else
+                cp "$onnx_dir/lib"/*.so* "$output_dir/lib/" 2>/dev/null || true
+            fi
         fi
     fi
 
