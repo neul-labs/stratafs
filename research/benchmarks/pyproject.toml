@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "agentfs-benchmarks"
+version = "0.1.0"
+description = "Benchmark suite for AgentFS research paper"
+authors = ["Dipankar Sarkar"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+openai = { version = "^1.0", optional = true }
+
+[tool.poetry.extras]
+openai = ["openai"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
