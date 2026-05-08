@@ -18,6 +18,10 @@ export function GetConfigDir() {
   return window['go']['main']['App']['GetConfigDir']();
 }
 
+export function GetMountStatus() {
+  return window['go']['main']['App']['GetMountStatus']();
+}
+
 export function GetQueueStats() {
   return window['go']['main']['App']['GetQueueStats']();
 }
@@ -30,8 +34,20 @@ export function InitConfig() {
   return window['go']['main']['App']['InitConfig']();
 }
 
+export function MountFilesystem() {
+  return window['go']['main']['App']['MountFilesystem']();
+}
+
 export function OpenConfigDir() {
   return window['go']['main']['App']['OpenConfigDir']();
+}
+
+export function OpenMountPoint() {
+  return window['go']['main']['App']['OpenMountPoint']();
+}
+
+export function Quit() {
+  return window['go']['main']['App']['Quit']();
 }
 
 export function RemoveSource(arg1) {
@@ -50,6 +66,10 @@ export function SetAPIURL(arg1) {
   return window['go']['main']['App']['SetAPIURL'](arg1);
 }
 
+export function ShowWindow() {
+  return window['go']['main']['App']['ShowWindow']();
+}
+
 export function StartAgentFS() {
   return window['go']['main']['App']['StartAgentFS']();
 }
@@ -58,26 +78,6 @@ export function StopAgentFS() {
   return window['go']['main']['App']['StopAgentFS']();
 }
 
-export function Quit() {
-  return window['go']['main']['App']['Quit']();
-}
-
-export function ShowWindow() {
-  return window['go']['main']['App']['ShowWindow']();
-}
-
-export function GetMountStatus() {
-  return window['go']['main']['App']['GetMountStatus']();
-}
-
-export function MountFilesystem() {
-  return window['go']['main']['App']['MountFilesystem']();
-}
-
 export function UnmountFilesystem() {
   return window['go']['main']['App']['UnmountFilesystem']();
-}
-
-export function OpenMountPoint() {
-  return window['go']['main']['App']['OpenMountPoint']();
 }

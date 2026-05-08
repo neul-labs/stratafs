@@ -1,6 +1,7 @@
 package filesystem
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -143,15 +144,23 @@ type localFileInfo struct {
 	os.FileInfo
 }
 
-// ObjectStoreFileSystem is a placeholder for an object store implementation
+// ObjectStoreFileSystem is a deprecated placeholder.
+// Deprecated: Use the concrete implementations instead:
+//   - S3FileSystem for AWS S3 (see s3.go)
+//   - GCSFileSystem for Google Cloud Storage (see gcs.go)
+//   - AzureFileSystem for Azure Blob Storage (see azure.go)
+//   - SharePointFileSystem for Microsoft SharePoint (see sharepoint.go)
+//   - GoogleDriveFileSystem for Google Drive (see google_drive.go)
+//   - JiraFileSystem for Jira issues (see jira.go)
+//
+// These are created via the storage.StorageFactory.CreateFileSystem() method.
 type ObjectStoreFileSystem struct {
-	// In a real implementation, this would contain connection details
-	// to an object store like S3, GCS, etc.
 	bucket string
 	prefix string
 }
 
 // NewObjectStoreFileSystem creates a new object store file system
+// Deprecated: Use storage.StorageFactory.CreateFileSystem() instead
 func NewObjectStoreFileSystem(bucket, prefix string) *ObjectStoreFileSystem {
 	return &ObjectStoreFileSystem{
 		bucket: bucket,
@@ -160,38 +169,33 @@ func NewObjectStoreFileSystem(bucket, prefix string) *ObjectStoreFileSystem {
 }
 
 // ReadFile reads the content of a file from object store
+// Deprecated: Use concrete implementations (S3FileSystem, GCSFileSystem, etc.)
 func (osfs *ObjectStoreFileSystem) ReadFile(name string) ([]byte, error) {
-	// TODO: Implement object store reading
-	// This is a placeholder implementation
-	return nil, nil
+	return nil, fmt.Errorf("ObjectStoreFileSystem is deprecated: use S3FileSystem, GCSFileSystem, or AzureFileSystem")
 }
 
 // Open opens a file for reading from object store
+// Deprecated: Use concrete implementations (S3FileSystem, GCSFileSystem, etc.)
 func (osfs *ObjectStoreFileSystem) Open(name string) (File, error) {
-	// TODO: Implement object store opening
-	// This is a placeholder implementation
-	return nil, nil
+	return nil, fmt.Errorf("ObjectStoreFileSystem is deprecated: use S3FileSystem, GCSFileSystem, or AzureFileSystem")
 }
 
 // Stat returns information about a file in object store
+// Deprecated: Use concrete implementations (S3FileSystem, GCSFileSystem, etc.)
 func (osfs *ObjectStoreFileSystem) Stat(name string) (FileInfo, error) {
-	// TODO: Implement object store stat
-	// This is a placeholder implementation
-	return nil, nil
+	return nil, fmt.Errorf("ObjectStoreFileSystem is deprecated: use S3FileSystem, GCSFileSystem, or AzureFileSystem")
 }
 
 // Walk walks the file tree in object store
+// Deprecated: Use concrete implementations (S3FileSystem, GCSFileSystem, etc.)
 func (osfs *ObjectStoreFileSystem) Walk(root string, walkFn WalkFunc) error {
-	// TODO: Implement object store walking
-	// This is a placeholder implementation
-	return nil
+	return fmt.Errorf("ObjectStoreFileSystem is deprecated: use S3FileSystem, GCSFileSystem, or AzureFileSystem")
 }
 
 // MkdirAll creates a directory path in object store
+// Deprecated: Use concrete implementations (S3FileSystem, GCSFileSystem, etc.)
 func (osfs *ObjectStoreFileSystem) MkdirAll(path string, perm os.FileMode) error {
-	// TODO: Implement object store directory creation
-	// This is a placeholder implementation
-	return nil
+	return fmt.Errorf("ObjectStoreFileSystem is deprecated: use S3FileSystem, GCSFileSystem, or AzureFileSystem")
 }
 
 // Join joins any number of path elements into a single path

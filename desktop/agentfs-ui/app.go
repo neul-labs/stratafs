@@ -10,8 +10,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
+
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
@@ -33,6 +34,16 @@ func NewApp() *App {
 // startup is called when the app starts
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+}
+
+// Quit completely exits the application
+func (a *App) Quit() {
+	wailsRuntime.Quit(a.ctx)
+}
+
+// ShowWindow shows the main window
+func (a *App) ShowWindow() {
+	wailsRuntime.WindowShow(a.ctx)
 }
 
 // Types for API responses
@@ -123,38 +134,31 @@ func (a *App) GetStatus() AppStatus {
 	return status
 }
 
-// isProcessRunning checks if agentfs process is running
+// isProcessRunning checks if agentfs daemon process is running
 func (a *App) isProcessRunning() bool {
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("tasklist", "/FI", "IMAGENAME eq agentfs.exe")
-	} else {
-		cmd = exec.Command("pgrep", "-f", "agentfs")
+	// Check if API is responding - most reliable method
+	resp, err := http.Get(a.apiURL + "/health")
+	if err == nil {
+		resp.Body.Close()
+		return resp.StatusCode == 200
 	}
-	output, err := cmd.Output()
-	if err != nil {
-		return false
-	}
-	if runtime.GOOS == "windows" {
-		return strings.Contains(string(output), "agentfs.exe")
-	}
-	return len(strings.TrimSpace(string(output))) > 0
+	return false
 }
 
 // StartAgentFS starts the AgentFS daemon
 func (a *App) StartAgentFS() error {
 	if a.isProcessRunning() {
-		return fmt.Errorf("AgentFS is already running")
+		return nil // Already running, not an error
 	}
 
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("agentfs", "--config-dir", a.configDir)
-		cmd.SysProcAttr = nil // No window
-	} else {
-		cmd = exec.Command("agentfs", "--config-dir", a.configDir)
+	// Find agentfs binary
+	agentfsPath := a.findAgentFSBinary()
+	if agentfsPath == "" {
+		return fmt.Errorf("agentfs binary not found - ensure it's bundled with the app or in PATH")
 	}
 
+	// Start the daemon in background
+	cmd := exec.Command(agentfsPath, "serve", "--config-dir", a.configDir)
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 
@@ -162,8 +166,13 @@ func (a *App) StartAgentFS() error {
 		return fmt.Errorf("failed to start AgentFS: %w", err)
 	}
 
+	// Detach the process so it survives after UI closes
+	if cmd.Process != nil {
+		cmd.Process.Release()
+	}
+
 	// Wait for API to become available
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		time.Sleep(500 * time.Millisecond)
 		if resp, err := http.Get(a.apiURL + "/health"); err == nil {
 			resp.Body.Close()
@@ -173,24 +182,31 @@ func (a *App) StartAgentFS() error {
 		}
 	}
 
-	return nil
+	return fmt.Errorf("AgentFS started but API not responding")
 }
 
 // StopAgentFS stops the AgentFS daemon
 func (a *App) StopAgentFS() error {
 	if !a.isProcessRunning() {
-		return fmt.Errorf("AgentFS is not running")
+		return nil // Not running, not an error
 	}
 
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command("taskkill", "/F", "/IM", "agentfs.exe")
 	} else {
-		cmd = exec.Command("pkill", "-f", "agentfs")
+		// Use pkill with exact match to avoid killing agentfs-ui
+		cmd = exec.Command("pkill", "-x", "agentfs")
 	}
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to stop AgentFS: %w", err)
+	_ = cmd.Run() // Ignore error - process might have already stopped
+
+	// Wait for API to become unavailable
+	for i := 0; i < 10; i++ {
+		time.Sleep(300 * time.Millisecond)
+		if !a.isProcessRunning() {
+			return nil
+		}
 	}
 
 	return nil
@@ -411,4 +427,145 @@ func (a *App) GetConfigDir() string {
 // SetAPIURL allows changing the API URL
 func (a *App) SetAPIURL(url string) {
 	a.apiURL = url
+}
+
+// MountStatus represents the current mount state
+type MountStatus struct {
+	Mounted    bool   `json:"mounted"`
+	MountPoint string `json:"mount_point"`
+	Error      string `json:"error,omitempty"`
+}
+
+// GetMountStatus checks if AgentFS is mounted
+func (a *App) GetMountStatus() MountStatus {
+	mountPoint := filepath.Join(a.configDir, "mnt")
+
+	// Check if mount point exists and has content
+	entries, err := os.ReadDir(mountPoint)
+	if err != nil {
+		return MountStatus{
+			Mounted:    false,
+			MountPoint: mountPoint,
+		}
+	}
+
+	// If we can read entries and there are some, it's likely mounted
+	return MountStatus{
+		Mounted:    len(entries) > 0,
+		MountPoint: mountPoint,
+	}
+}
+
+// MountFilesystem mounts AgentFS as a FUSE filesystem
+func (a *App) MountFilesystem() error {
+	mountPoint := filepath.Join(a.configDir, "mnt")
+
+	// Create mount point directory
+	if err := os.MkdirAll(mountPoint, 0755); err != nil {
+		return fmt.Errorf("failed to create mount point: %w", err)
+	}
+
+	// Find agentfs binary (same logic as StartAgentFS)
+	agentfsPath := a.findAgentFSBinary()
+	if agentfsPath == "" {
+		return fmt.Errorf("agentfs binary not found")
+	}
+
+	// Start the mount command
+	cmd := exec.Command(agentfsPath, "mount", "--mount-point", mountPoint, "--config-dir", a.configDir)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("mount failed: %s - %w", string(output), err)
+	}
+
+	return nil
+}
+
+// UnmountFilesystem unmounts the AgentFS FUSE filesystem
+func (a *App) UnmountFilesystem() error {
+	mountPoint := filepath.Join(a.configDir, "mnt")
+
+	var cmd *exec.Cmd
+	if runtime.GOOS == "darwin" {
+		cmd = exec.Command("umount", mountPoint)
+	} else if runtime.GOOS == "linux" {
+		cmd = exec.Command("fusermount", "-u", mountPoint)
+	} else {
+		return fmt.Errorf("unmount not supported on %s", runtime.GOOS)
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("unmount failed: %s - %w", string(output), err)
+	}
+
+	return nil
+}
+
+// OpenMountPoint opens the mount point in the file manager
+func (a *App) OpenMountPoint() error {
+	mountPoint := filepath.Join(a.configDir, "mnt")
+
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", mountPoint)
+	case "darwin":
+		cmd = exec.Command("open", mountPoint)
+	default:
+		cmd = exec.Command("xdg-open", mountPoint)
+	}
+	return cmd.Start()
+}
+
+// findAgentFSBinary locates the agentfs binary
+func (a *App) findAgentFSBinary() string {
+	// Get the directory of the current executable
+	if execPath, err := os.Executable(); err == nil {
+		execDir := filepath.Dir(execPath)
+		bundledPaths := []string{
+			filepath.Join(execDir, "agentfs"),
+			filepath.Join(execDir, "bin", "agentfs"),
+			filepath.Join(execDir, "..", "Resources", "agentfs"),
+		}
+		if runtime.GOOS == "windows" {
+			bundledPaths = []string{
+				filepath.Join(execDir, "agentfs.exe"),
+				filepath.Join(execDir, "bin", "agentfs.exe"),
+			}
+		}
+		for _, p := range bundledPaths {
+			if _, err := os.Stat(p); err == nil {
+				return p
+			}
+		}
+	}
+
+	// Check PATH
+	if path, err := exec.LookPath("agentfs"); err == nil {
+		return path
+	}
+
+	// Common locations
+	homeDir, _ := os.UserHomeDir()
+	var fallbackPaths []string
+	if runtime.GOOS == "windows" {
+		fallbackPaths = []string{
+			filepath.Join(homeDir, "AppData", "Local", "AgentFS", "agentfs.exe"),
+			"C:\\Program Files\\AgentFS\\agentfs.exe",
+		}
+	} else {
+		fallbackPaths = []string{
+			"/usr/local/bin/agentfs",
+			"/usr/bin/agentfs",
+			filepath.Join(homeDir, ".local/bin/agentfs"),
+		}
+	}
+	for _, p := range fallbackPaths {
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+
+	return ""
 }

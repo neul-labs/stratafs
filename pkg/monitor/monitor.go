@@ -10,11 +10,15 @@ import (
 	"time"
 
 	"agentfs/internal/utils"
+	"agentfs/pkg/api"
 	"agentfs/pkg/config"
 	"agentfs/pkg/database"
 	"agentfs/pkg/embeddings"
 	"agentfs/pkg/filesystem"
 	"agentfs/pkg/parsers"
+	"agentfs/pkg/protocol"
+	"agentfs/pkg/queue"
+	"agentfs/pkg/search"
 
 	"github.com/sourcegraph/conc/pool"
 	"golang.org/x/exp/slices"
@@ -22,20 +26,25 @@ import (
 
 // Monitor watches directories for file changes
 type Monitor struct {
-	config     *config.Config
-	databases  map[string]*database.DB
-	embedder   *embeddings.Embedder
-	filesystem filesystem.FileSystem
-	wg         sync.WaitGroup
-	ctx        context.Context
-	cancel     context.CancelFunc
-	done       chan struct{}
+	config       *config.Config
+	databases    map[string]*database.DB
+	embedder     *embeddings.Embedder
+	filesystem   filesystem.FileSystem
+	fileWatcher  *FileWatcher
+	jobQueue     *queue.Queue
+	searchEngine *search.Engine
+	apiServer    *api.Server
+	mcpServer    *protocol.ModelContextProtocol
+	wg           sync.WaitGroup
+	ctx          context.Context
+	cancel       context.CancelFunc
+	done         chan struct{}
 }
 
 // NewMonitor creates a new file system monitor
 func NewMonitor(cfg *config.Config) (*Monitor, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	m := &Monitor{
 		config:     cfg,
 		databases:  make(map[string]*database.DB),
@@ -44,14 +53,14 @@ func NewMonitor(cfg *config.Config) (*Monitor, error) {
 		cancel:     cancel,
 		done:       make(chan struct{}),
 	}
-	
+
 	// Initialize embedder
 	embedder, err := embeddings.NewEmbedder(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize embedder: %w", err)
 	}
 	m.embedder = embedder
-	
+
 	// Initialize databases for each enabled local source
 	for _, source := range cfg.GetEnabledSources() {
 		if source.Type == config.StorageTypeLocal {
@@ -60,7 +69,43 @@ func NewMonitor(cfg *config.Config) (*Monitor, error) {
 			}
 		}
 	}
-	
+
+	// Initialize job queue (using first database path for queue storage)
+	if len(m.databases) > 0 {
+		var queuePath string
+		for dir := range m.databases {
+			queuePath = cfg.GetAgentPath(dir) + "/queue.db"
+			break
+		}
+		jobQueue, err := queue.NewQueue(queuePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize job queue: %w", err)
+		}
+		m.jobQueue = jobQueue
+
+		// Initialize file watcher with fsnotify
+		fileWatcher, err := NewFileWatcher(cfg, jobQueue)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize file watcher: %w", err)
+		}
+		m.fileWatcher = fileWatcher
+
+		// Initialize search engine
+		searchEngine, err := search.NewEngine(m.databases, embedder)
+		if err != nil {
+			// Search engine is optional - log warning but continue
+			fmt.Printf("Warning: Failed to initialize search engine: %v\n", err)
+		} else {
+			m.searchEngine = searchEngine
+		}
+
+		// Initialize API server
+		m.apiServer = api.NewServer(cfg, m.databases, jobQueue, m.searchEngine)
+
+		// Initialize MCP server
+		m.mcpServer = protocol.NewModelContextProtocol(m.databases, m.searchEngine)
+	}
+
 	return m, nil
 }
 
@@ -85,56 +130,62 @@ func (m *Monitor) initializeDirectory(dir string) error {
 
 // Start begins monitoring file system changes
 func (m *Monitor) Start() error {
-	// Start monitoring each enabled local source in a goroutine
-	for _, source := range m.config.GetEnabledSources() {
-		if source.Type == config.StorageTypeLocal {
-			m.wg.Add(1)
-			go func(s config.StorageSource) {
-				defer m.wg.Done()
-				d := s.Path
-				m.watchDirectory(d)
-			}(source)
+	// Start file watcher with fsnotify for real-time monitoring
+	if m.fileWatcher != nil {
+		if err := m.fileWatcher.Start(); err != nil {
+			return fmt.Errorf("failed to start file watcher: %w", err)
 		}
+		fmt.Println("Started file watcher with fsnotify")
 	}
-	
+
 	// Start compaction service
 	m.wg.Add(1)
 	go func() {
 		defer m.wg.Done()
 		m.runCompactionService()
 	}()
-	
+
 	// Start API server
-	m.wg.Add(1)
-	go func() {
-		defer m.wg.Done()
-		// TODO: Start API server
-	}()
-	
+	if m.apiServer != nil {
+		m.wg.Add(1)
+		go func() {
+			defer m.wg.Done()
+			if err := m.apiServer.Start(); err != nil {
+				fmt.Printf("API server error: %v\n", err)
+			}
+		}()
+		fmt.Printf("Started API server on :%d\n", m.config.Server.APIPort)
+	}
+
 	// Start Model Context Protocol server
-	m.wg.Add(1)
-	go func() {
-		defer m.wg.Done()
-		// TODO: Start MCP server
-	}()
-	
+	if m.mcpServer != nil {
+		m.wg.Add(1)
+		go func() {
+			defer m.wg.Done()
+			if err := m.mcpServer.Start(); err != nil {
+				fmt.Printf("MCP server error: %v\n", err)
+			}
+		}()
+		fmt.Printf("Started MCP server on :%d\n", m.config.Server.MCPPort)
+	}
+
 	// Start graceful shutdown goroutine
 	go func() {
 		defer close(m.done)
 		m.wg.Wait()
 	}()
-	
+
 	return nil
 }
 
 // watchDirectory monitors a single directory for changes
+// Deprecated: Use FileWatcher.Start() instead for fsnotify-based watching
 func (m *Monitor) watchDirectory(dir string) {
-	// TODO: Implement file system watching using fsnotify or similar
-	// For now, we'll do periodic scanning
-	
+	// Legacy polling-based watching - kept for fallback compatibility
+	// Primary watching is now handled by FileWatcher using fsnotify
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -339,5 +390,26 @@ func (m *Monitor) Done() <-chan struct{} {
 
 // Stop gracefully stops the monitor
 func (m *Monitor) Stop() {
+	// Stop file watcher
+	if m.fileWatcher != nil {
+		m.fileWatcher.Stop()
+	}
+
+	// Stop API server
+	if m.apiServer != nil {
+		m.apiServer.Stop()
+	}
+
+	// Stop MCP server
+	if m.mcpServer != nil {
+		m.mcpServer.Stop()
+	}
+
+	// Stop job queue
+	if m.jobQueue != nil {
+		m.jobQueue.Stop()
+	}
+
+	// Cancel context to stop all goroutines
 	m.cancel()
 }

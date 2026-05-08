@@ -424,15 +424,143 @@ func (c *TokenChunker) DefaultOptions() ChunkOptions {
 }
 
 func (c *TokenChunker) ChunkStream(reader io.Reader, options ChunkOptions) (<-chan Chunk, <-chan error) {
-	// For now, fallback to simple chunking
-	// TODO: Implement proper tokenization
-	simple := &SimpleChunker{}
-	return simple.ChunkStream(reader, options)
+	chunkCh := make(chan Chunk, 10)
+	errCh := make(chan error, 1)
+
+	go func() {
+		defer close(chunkCh)
+		defer close(errCh)
+
+		content, err := io.ReadAll(reader)
+		if err != nil {
+			errCh <- err
+			return
+		}
+
+		text := string(content)
+		chunks, err := c.chunkByTokens(text, options)
+		if err != nil {
+			errCh <- err
+			return
+		}
+
+		for _, chunk := range chunks {
+			select {
+			case chunkCh <- chunk:
+			case <-errCh:
+				return
+			}
+		}
+	}()
+
+	return chunkCh, errCh
 }
 
 func (c *TokenChunker) Chunk(text string, options ChunkOptions) ([]Chunk, error) {
-	// For now, fallback to simple chunking
-	// TODO: Implement proper tokenization
-	simple := &SimpleChunker{}
-	return simple.Chunk(text, options)
+	return c.chunkByTokens(text, options)
+}
+
+// chunkByTokens splits text respecting approximate token boundaries
+// Uses word-based estimation: ~0.75 tokens per word for English text
+func (c *TokenChunker) chunkByTokens(text string, options ChunkOptions) ([]Chunk, error) {
+	maxTokens := options.MaxTokens
+	if maxTokens <= 0 {
+		maxTokens = 256 // Default token limit
+	}
+
+	// Approximate characters per token (avg ~4 chars/token for English)
+	charsPerToken := 4
+	maxChars := maxTokens * charsPerToken
+	overlapChars := (options.OverlapSize * charsPerToken) / 10 // ~10% overlap in token terms
+
+	words := c.tokenize(text)
+	if len(words) == 0 {
+		return nil, nil
+	}
+
+	var chunks []Chunk
+	var currentChunk strings.Builder
+	var overlapBuffer []string
+	globalOffset := 0
+	chunkIndex := 0
+
+	for _, word := range words {
+		wordWithSpace := word + " "
+
+		// Check if adding this word would exceed the token limit
+		if currentChunk.Len() > 0 && currentChunk.Len()+len(wordWithSpace) > maxChars {
+			// Emit current chunk
+			chunk := Chunk{
+				Content: strings.TrimSpace(currentChunk.String()),
+				Offset:  globalOffset,
+				Length:  currentChunk.Len(),
+				Index:   chunkIndex,
+			}
+			chunks = append(chunks, chunk)
+
+			// Start new chunk with overlap
+			currentChunk.Reset()
+			for _, overlapWord := range overlapBuffer {
+				currentChunk.WriteString(overlapWord)
+				currentChunk.WriteString(" ")
+			}
+
+			if currentChunk.Len() > 0 {
+				globalOffset += chunk.Length - currentChunk.Len()
+			} else {
+				globalOffset += chunk.Length
+			}
+			chunkIndex++
+		}
+
+		currentChunk.WriteString(wordWithSpace)
+
+		// Maintain overlap buffer
+		overlapBuffer = append(overlapBuffer, word)
+		overlapSize := 0
+		for _, w := range overlapBuffer {
+			overlapSize += len(w) + 1
+		}
+		for overlapSize > overlapChars && len(overlapBuffer) > 1 {
+			overlapSize -= len(overlapBuffer[0]) + 1
+			overlapBuffer = overlapBuffer[1:]
+		}
+	}
+
+	// Emit final chunk
+	if currentChunk.Len() > 0 {
+		chunk := Chunk{
+			Content: strings.TrimSpace(currentChunk.String()),
+			Offset:  globalOffset,
+			Length:  currentChunk.Len(),
+			Index:   chunkIndex,
+		}
+		chunks = append(chunks, chunk)
+	}
+
+	return chunks, nil
+}
+
+// tokenize splits text into words/tokens
+func (c *TokenChunker) tokenize(text string) []string {
+	// Split on whitespace and punctuation boundaries
+	var words []string
+	var current strings.Builder
+
+	for _, r := range text {
+		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
+			if current.Len() > 0 {
+				words = append(words, current.String())
+				current.Reset()
+			}
+		} else {
+			current.WriteRune(r)
+		}
+	}
+
+	if current.Len() > 0 {
+		words = append(words, current.String())
+	}
+
+	return words
 }

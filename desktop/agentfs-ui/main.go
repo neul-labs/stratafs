@@ -6,6 +6,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/linux"
 )
 
 //go:embed all:frontend/dist
@@ -15,13 +16,22 @@ func main() {
 	// Create an instance of the app structure
 	app := NewApp()
 
+	// Fixed window dimensions for consistent UI
+	const windowWidth = 480
+	const windowHeight = 640
+
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "AgentFS Control Panel",
-		Width:  900,
-		Height: 700,
-		MinWidth: 600,
-		MinHeight: 500,
+		Title:         "AgentFS",
+		Width:         windowWidth,
+		Height:        windowHeight,
+		MinWidth:      windowWidth,
+		MinHeight:     windowHeight,
+		MaxWidth:      windowWidth,
+		MaxHeight:     windowHeight,
+		DisableResize: true,
+		Frameless:     false,
+		StartHidden:   false,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
@@ -29,6 +39,10 @@ func main() {
 		OnStartup:        app.startup,
 		Bind: []interface{}{
 			app,
+		},
+		Linux: &linux.Options{
+			ProgramName: "AgentFS",
+			Icon:        nil, // Will use default icon
 		},
 	})
 

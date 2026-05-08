@@ -124,11 +124,124 @@ func (m *FileUpdateManager) softDeleteAndReplaceChunks(fileID int64, chunks []Ch
 	return tx.Commit()
 }
 
-// versionedUpdateChunks keeps old versions for comparison (future feature)
+// versionedUpdateChunks keeps old versions and only updates changed chunks
 func (m *FileUpdateManager) versionedUpdateChunks(fileID int64, chunks []ChunkData) error {
-	// For now, fallback to soft delete strategy
-	// TODO: Implement proper versioning with chunk comparison
-	return m.softDeleteAndReplaceChunks(fileID, chunks)
+	// Start transaction
+	tx, err := m.db.conn.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Get existing chunks for comparison
+	existingChunks, err := m.getExistingChunks(tx, fileID)
+	if err != nil {
+		return fmt.Errorf("failed to get existing chunks: %w", err)
+	}
+
+	// Build content hash map of existing chunks for comparison
+	existingByHash := make(map[string]int64) // content hash -> chunk ID
+	for _, chunk := range existingChunks {
+		hash := m.hashContent(chunk.Content)
+		existingByHash[hash] = chunk.ID
+	}
+
+	// Track which existing chunks are still in use
+	usedChunkIDs := make(map[int64]bool)
+	var newChunks []ChunkData
+
+	// Compare new chunks against existing
+	for _, chunk := range chunks {
+		hash := m.hashContent(chunk.Content)
+		if existingID, found := existingByHash[hash]; found {
+			// Chunk content unchanged - keep it
+			usedChunkIDs[existingID] = true
+		} else {
+			// New or modified chunk - needs to be inserted
+			newChunks = append(newChunks, chunk)
+		}
+	}
+
+	// Soft delete chunks that are no longer in the file
+	for _, existing := range existingChunks {
+		if !usedChunkIDs[existing.ID] {
+			_, err = tx.Exec(`
+				UPDATE file_chunks
+				SET deleted_at = CURRENT_TIMESTAMP
+				WHERE id = ? AND deleted_at IS NULL
+			`, existing.ID)
+			if err != nil {
+				return fmt.Errorf("failed to soft delete old chunk: %w", err)
+			}
+		}
+	}
+
+	// Insert new chunks
+	for _, chunk := range newChunks {
+		err = m.insertChunk(tx, fileID, chunk)
+		if err != nil {
+			return fmt.Errorf("failed to insert new chunk: %w", err)
+		}
+	}
+
+	return tx.Commit()
+}
+
+// existingChunk represents an existing chunk from the database
+type existingChunk struct {
+	ID      int64
+	Content string
+}
+
+// getExistingChunks retrieves all non-deleted chunks for a file
+func (m *FileUpdateManager) getExistingChunks(tx *sql.Tx, fileID int64) ([]existingChunk, error) {
+	query := `
+		SELECT id, COALESCE(content, '') as content, content_compressed, is_compressed
+		FROM file_chunks
+		WHERE file_id = ? AND deleted_at IS NULL
+		ORDER BY offset
+	`
+
+	rows, err := tx.Query(query, fileID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var chunks []existingChunk
+	for rows.Next() {
+		var chunk existingChunk
+		var contentCompressed []byte
+		var isCompressed bool
+
+		if err := rows.Scan(&chunk.ID, &chunk.Content, &contentCompressed, &isCompressed); err != nil {
+			return nil, err
+		}
+
+		// Decompress if needed
+		if isCompressed && len(contentCompressed) > 0 {
+			decompressed, err := decompressContent(contentCompressed)
+			if err != nil {
+				return nil, fmt.Errorf("failed to decompress chunk: %w", err)
+			}
+			chunk.Content = decompressed
+		}
+
+		chunks = append(chunks, chunk)
+	}
+
+	return chunks, rows.Err()
+}
+
+// hashContent creates a simple hash of content for comparison
+func (m *FileUpdateManager) hashContent(content string) string {
+	// Use a simple FNV-1a hash for fast comparison
+	h := uint64(14695981039346656037)
+	for i := 0; i < len(content); i++ {
+		h ^= uint64(content[i])
+		h *= 1099511628211
+	}
+	return fmt.Sprintf("%x", h)
 }
 
 // insertChunk inserts a single chunk
