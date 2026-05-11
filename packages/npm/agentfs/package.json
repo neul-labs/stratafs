@@ -1,0 +1,31 @@
+{
+  "name": "agentfs",
+  "version": "0.2.0",
+  "description": "AgentFS - A semantic filesystem for AI agents",
+  "main": "index.js",
+  "bin": {
+    "agentfs": "bin/agentfs.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js",
+    "build": "echo 'No build step required'"
+  },
+  "keywords": [
+    "agentfs",
+    "filesystem",
+    "semantic",
+    "search",
+    "ai"
+  ],
+  "author": "AgentFS Contributors",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "index.js",
+    "install.js",
+    "bin/",
+    "README.md"
+  ]
+}
