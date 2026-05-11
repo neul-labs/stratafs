@@ -1,7 +1,7 @@
 # Binaries
-bin/
-build/
-agentfs
+/bin/
+/build/
+/agentfs
 
 # Build artifacts
 *.exe
