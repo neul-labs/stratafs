@@ -34,7 +34,7 @@ jobs:
         node-version: '24'
 
     - name: Install Wails
-      run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.11.0
 
     - name: Install Linux dependencies
       run: |
@@ -51,8 +51,8 @@ jobs:
         name: stratafs-ui-linux-amd64
         path: desktop/stratafs-ui/build/bin/stratafs-ui
 
-  build-binaries:
-    name: Build Binaries
+  build-linux-windows:
+    name: Build ${{ matrix.os }}-${{ matrix.arch }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -60,10 +60,6 @@ jobs:
           - os: linux
             arch: amd64
           - os: linux
-            arch: arm64
-          - os: darwin
-            arch: amd64
-          - os: darwin
             arch: arm64
           - os: windows
             arch: amd64
@@ -82,7 +78,7 @@ jobs:
     - name: Install cross-compilation dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf
+        sudo apt-get install -y gcc-aarch64-linux-gnu
         if [ "${{ matrix.os }}" = "windows" ]; then
           sudo apt-get install -y gcc-mingw-w64
         fi
@@ -93,24 +89,14 @@ jobs:
         OS_NAME="${{ matrix.os }}"
         ARCH_NAME="${{ matrix.arch }}"
 
-        # Map OS names
         case "$OS_NAME" in
           linux) ONNX_OS="linux" ;;
-          darwin) ONNX_OS="osx" ;;
           windows) ONNX_OS="win" ;;
         esac
 
-        # Map architecture names. Note: the macOS x86_64 build is published
-        # as "x86_64", not "x64" like Linux/Windows. Linux arm64 is "aarch64".
         case "$ARCH_NAME" in
-          amd64)
-            if [ "$ONNX_OS" = "osx" ]; then ONNX_ARCH="x86_64"; else ONNX_ARCH="x64"; fi
-            ;;
-          arm64)
-            if [ "$ONNX_OS" = "linux" ]; then ONNX_ARCH="aarch64"; else ONNX_ARCH="arm64"; fi
-            ;;
-          arm) ONNX_ARCH="arm" ;;
-          386) ONNX_ARCH="x86" ;;
+          amd64) ONNX_ARCH="x64" ;;
+          arm64) ONNX_ARCH="aarch64" ;;
         esac
 
         ONNX_NAME="onnxruntime-${ONNX_OS}-${ONNX_ARCH}-${ONNX_VERSION}"
@@ -134,17 +120,9 @@ jobs:
             echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
             echo "CXX=aarch64-linux-gnu-g++" >> $GITHUB_ENV
             ;;
-          linux-arm)
-            echo "CC=arm-linux-gnueabihf-gcc" >> $GITHUB_ENV
-            echo "CXX=arm-linux-gnueabihf-g++" >> $GITHUB_ENV
-            ;;
           windows-amd64)
             echo "CC=x86_64-w64-mingw32-gcc" >> $GITHUB_ENV
             echo "CXX=x86_64-w64-mingw32-g++" >> $GITHUB_ENV
-            ;;
-          windows-386)
-            echo "CC=i686-w64-mingw32-gcc" >> $GITHUB_ENV
-            echo "CXX=i686-w64-mingw32-g++" >> $GITHUB_ENV
             ;;
         esac
 
@@ -156,12 +134,6 @@ jobs:
         VERSION: ${{ github.ref_name }}
       run: |
         ONNX_DIR="onnx/${{ matrix.os }}-${{ matrix.arch }}"
-
-        if [ -d "$ONNX_DIR" ]; then
-          export CGO_CFLAGS="-I$PWD/$ONNX_DIR/include"
-          export CGO_LDFLAGS="-L$PWD/$ONNX_DIR/lib -lonnxruntime"
-        fi
-
         BINARY_NAME="stratafs"
         if [ "${{ matrix.os }}" = "windows" ]; then
           BINARY_NAME="stratafs.exe"
@@ -170,18 +142,21 @@ jobs:
         BUILD_DIR="build/${{ matrix.os }}-${{ matrix.arch }}"
         mkdir -p "$BUILD_DIR"
 
+        if [ -d "$ONNX_DIR" ]; then
+          export CGO_CFLAGS="-I$PWD/$ONNX_DIR/include"
+          export CGO_LDFLAGS="-L$PWD/$ONNX_DIR/lib -lonnxruntime"
+        fi
+
         go build \
           -tags "fts5" \
           -ldflags "-s -w -X main.version=${VERSION} -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           -o "$BUILD_DIR/$BINARY_NAME" \
           ./cmd/stratafs
 
-        # Copy ONNX Runtime libraries
         if [ -d "$ONNX_DIR/lib" ]; then
           cp -r "$ONNX_DIR/lib" "$BUILD_DIR/" || true
         fi
 
-        # Create README
         cat > "$BUILD_DIR/README.txt" << EOF
         StrataFS ${VERSION}
         ================
@@ -214,10 +189,102 @@ jobs:
         name: stratafs-${{ matrix.os }}-${{ matrix.arch }}
         path: build/stratafs-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}.*
 
+  build-darwin:
+    name: Build ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - os: darwin
+            arch: amd64
+          - os: darwin
+            arch: arm64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Download ONNX Runtime
+      run: |
+        ONNX_VERSION="1.16.3"
+        ARCH_NAME="${{ matrix.arch }}"
+
+        case "$ARCH_NAME" in
+          amd64) ONNX_ARCH="x86_64" ;;
+          arm64) ONNX_ARCH="arm64" ;;
+        esac
+
+        ONNX_NAME="onnxruntime-osx-${ONNX_ARCH}-${ONNX_VERSION}"
+        ONNX_DIR="onnx/darwin-${ARCH_NAME}"
+
+        mkdir -p "$ONNX_DIR"
+        ONNX_URL="https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/${ONNX_NAME}.tgz"
+        curl -fsSL "$ONNX_URL" | tar -xz -C "$ONNX_DIR" --strip-components=1
+
+    - name: Build binary
+      env:
+        GOOS: darwin
+        GOARCH: ${{ matrix.arch }}
+        CGO_ENABLED: 1
+        VERSION: ${{ github.ref_name }}
+      run: |
+        ONNX_DIR="onnx/darwin-${{ matrix.arch }}"
+
+        if [ -d "$ONNX_DIR" ]; then
+          export CGO_CFLAGS="-I$PWD/$ONNX_DIR/include"
+          export CGO_LDFLAGS="-L$PWD/$ONNX_DIR/lib -lonnxruntime"
+        fi
+
+        BUILD_DIR="build/darwin-${{ matrix.arch }}"
+        mkdir -p "$BUILD_DIR"
+
+        go build \
+          -tags "fts5" \
+          -ldflags "-s -w -X main.version=${VERSION} -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          -o "$BUILD_DIR/stratafs" \
+          ./cmd/stratafs
+
+        if [ -d "$ONNX_DIR/lib" ]; then
+          cp -r "$ONNX_DIR/lib" "$BUILD_DIR/" || true
+        fi
+
+        cat > "$BUILD_DIR/README.txt" << EOF
+        StrataFS ${VERSION}
+        ================
+
+        Platform: darwin/${{ matrix.arch }}
+        Build Time: $(date -u)
+
+        Installation:
+        1. Extract this archive
+        2. Copy stratafs to a directory in your PATH
+        3. Run 'stratafs config init' to initialize
+
+        For more information: https://github.com/${{ github.repository }}
+        EOF
+
+    - name: Create archive
+      run: |
+        BUILD_DIR="build/darwin-${{ matrix.arch }}"
+        ARCHIVE_NAME="stratafs-${{ github.ref_name }}-darwin-${{ matrix.arch }}"
+        cd build && tar -czf "${ARCHIVE_NAME}.tar.gz" "darwin-${{ matrix.arch }}"
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: stratafs-darwin-${{ matrix.arch }}
+        path: build/stratafs-${{ github.ref_name }}-darwin-${{ matrix.arch }}.*
+
   build-docker:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: build-binaries
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -255,7 +322,7 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [build-binaries, build-desktop-linux, build-docker]
+    needs: [build-linux-windows, build-darwin, build-desktop-linux, build-docker]
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
@@ -374,4 +441,4 @@ jobs:
       run: cd packages/npm/stratafs && npm ci
 
     - name: Publish to npm
-      run: cd packages/npm/stratafs && npm publish
+      run: cd packages/npm/stratafs && npm publish --provenance --access public
