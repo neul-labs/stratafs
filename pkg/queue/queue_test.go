@@ -264,8 +264,8 @@ func TestGetPendingJobCount(t *testing.T) {
 	}
 
 	// Add some jobs
-	queue.AddJob(JobTypeParse, "/test/1.txt", "dir1", 1, "")
-	queue.AddJob(JobTypeEmbed, "/test/2.txt", "dir1", 1, "")
+	_, _ = queue.AddJob(JobTypeParse, "/test/1.txt", "dir1", 1, "")
+	_, _ = queue.AddJob(JobTypeEmbed, "/test/2.txt", "dir1", 1, "")
 
 	// Should have 2 pending jobs
 	count, err = queue.GetPendingJobCount()
@@ -380,10 +380,10 @@ func TestCleanupOldJobs(t *testing.T) {
 	job2, _ := queue.AddJob(JobTypeEmbed, "/test/old2.txt", "dir1", 1, "")
 
 	// Process and complete jobs
-	queue.GetNextJob()
-	queue.CompleteJob(job1.ID)
-	queue.GetNextJob()
-	queue.CompleteJob(job2.ID)
+	_, _ = queue.GetNextJob()
+	_ = queue.CompleteJob(job1.ID)
+	_, _ = queue.GetNextJob()
+	_ = queue.CompleteJob(job2.ID)
 
 	// Initially should have jobs
 	stats, _ := queue.GetQueueStats()

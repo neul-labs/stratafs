@@ -201,7 +201,7 @@ func (s *Server) handleDocument(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if req.Format == "text" && response.File != nil {
 		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte(response.File.Content))
+		_, _ = w.Write([]byte(response.File.Content))
 		return
 	}
 
@@ -354,7 +354,7 @@ func (s *Server) handleRedoc(w http.ResponseWriter, r *http.Request) {
 </body>
 </html>`
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(html))
+	_, _ = w.Write([]byte(html))
 }
 
 // getOpenAPISpec returns the comprehensive OpenAPI specification

@@ -1,15 +1,13 @@
 # Build stage
-FROM golang:1.24-alpine AS builder
+FROM golang:1.24-bookworm AS builder
 
 # Install build dependencies
-RUN apk add --no-cache \
-    git \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
-    musl-dev \
-    sqlite-dev \
+    libsqlite3-dev \
     curl \
-    tar \
-    wget
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -25,15 +23,12 @@ COPY . .
 
 # Install ONNX Runtime
 RUN mkdir -p /opt/onnxruntime && \
-    curl -L https://github.com/microsoft/onnxruntime/releases/download/v1.16.3/onnxruntime-linux-x64-1.16.3.tgz | \
+    curl -fsSL https://github.com/microsoft/onnxruntime/releases/download/v1.16.3/onnxruntime-linux-x64-1.16.3.tgz | \
     tar -xz -C /opt/onnxruntime --strip-components=1
 
-# Set CGO flags for ONNX Runtime
+# Build the application
 ENV CGO_CFLAGS="-I/opt/onnxruntime/include"
 ENV CGO_LDFLAGS="-L/opt/onnxruntime/lib -lonnxruntime"
-ENV LD_LIBRARY_PATH="/opt/onnxruntime/lib:$LD_LIBRARY_PATH"
-
-# Build the application
 RUN CGO_ENABLED=1 GOOS=linux go build \
     -tags "fts5" \
     -ldflags "-w -s" \
@@ -41,19 +36,20 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
     ./cmd/stratafs
 
 # Runtime stage
-FROM alpine:3.21
+FROM debian:bookworm-slim
 
 # Install runtime dependencies
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    sqlite \
+    libsqlite3-0 \
     tzdata \
     wget \
+    && rm -rf /var/lib/apt/lists/* \
     && update-ca-certificates
 
 # Create non-root user
-RUN addgroup -g 1001 stratafs && \
-    adduser -D -s /bin/sh -u 1001 -G stratafs stratafs
+RUN groupadd -g 1001 stratafs && \
+    useradd -m -s /bin/sh -u 1001 -g stratafs stratafs
 
 # Copy ONNX Runtime libraries
 COPY --from=builder /opt/onnxruntime/lib/* /usr/local/lib/
@@ -61,12 +57,15 @@ COPY --from=builder /opt/onnxruntime/lib/* /usr/local/lib/
 # Copy binary
 COPY --from=builder /app/stratafs /usr/local/bin/stratafs
 
+# Update library cache
+RUN ldconfig
+
 # Create directories with proper permissions
 RUN mkdir -p /app/data /app/config /app/.stratafs && \
     chown -R stratafs:stratafs /app
 
 # Set library path
-ENV LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
+ENV LD_LIBRARY_PATH="/usr/local/lib"
 
 # Switch to non-root user
 USER stratafs

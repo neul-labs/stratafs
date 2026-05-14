@@ -16,10 +16,7 @@ type Parser interface {
 }
 
 // FileParser wraps a parser with file path information for PDF parsing
-type FileParser struct {
-	parser   Parser
-	filePath string
-}
+type FileParser struct{}
 
 // TextParser is a simple parser for plain text files
 type TextParser struct{}
@@ -119,94 +116,3 @@ func GetParser(filename string) Parser {
 // Note: Legacy DOC format (.doc) is not supported due to complexity of the binary format.
 // Modern DOCX format is supported via ZIP-based XML parsing.
 // For DOC support, external tools like 'wv' or 'antiword' would be required.
-
-// shouldParseFile determines if a file should be parsed based on its extension
-func shouldParseFile(extension string) bool {
-	// Supported text-based files
-	supportedExts := []string{
-		// Text files
-		".txt", ".md", ".markdown", ".rst", ".adoc", ".asciidoc", ".log", ".csv", ".tsv",
-
-		// Code files
-		".go", ".py", ".js", ".ts", ".java", ".cpp", ".c", ".h", ".rs", ".swift", ".kt", ".php",
-		".rb", ".sh", ".bash", ".zsh", ".ps1", ".sql",
-
-		// Markup files
-		".html", ".htm", ".xml", ".json", ".yaml", ".yml", ".toml",
-
-		// Documents
-		".pdf", ".docx", ".pptx", ".rtf",
-
-		// Spreadsheets
-		".xlsx", ".xls", ".ods",
-	}
-
-	for _, ext := range supportedExts {
-		if ext == extension {
-			return true
-		}
-	}
-
-	// Skip binary files, images, videos, archives, etc.
-	unsupportedExts := []string{
-		// Binary files
-		".exe", ".bin", ".dll", ".so", ".dylib",
-
-		// Images
-		".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".ico", ".svg",
-
-		// Video
-		".mp4", ".avi", ".mov", ".wmv", ".mkv", ".webm",
-
-		// Audio
-		".mp3", ".wav", ".flac", ".ogg", ".m4a",
-
-		// Archives
-		".zip", ".tar", ".gz", ".bz2", ".xz", ".7z", ".rar",
-
-		// Other binary formats (that we don't support)
-		".db", ".sqlite",
-	}
-
-	for _, ext := range unsupportedExts {
-		if ext == extension {
-			return false
-		}
-	}
-
-	// Default to parsing if we're not sure (but validate content)
-	return true
-}
-
-// isCodeFile checks if the extension is for a code file
-func isCodeFile(extension string) bool {
-	supported := []string{".go", ".py", ".js", ".ts", ".java", ".cpp", ".c", ".h", ".rs", ".swift", ".kt", ".php"}
-	for _, ext := range supported {
-		if ext == extension {
-			return true
-		}
-	}
-	return false
-}
-
-// isTextFile checks if the extension is for a text file
-func isTextFile(extension string) bool {
-	supported := []string{".txt", ".md", ".markdown", ".rst", ".adoc", ".asciidoc", ".log"}
-	for _, ext := range supported {
-		if ext == extension {
-			return true
-		}
-	}
-	return false
-}
-
-// isMarkupFile checks if the extension is for a markup file
-func isMarkupFile(extension string) bool {
-	supported := []string{".html", ".htm", ".xml", ".json", ".yaml", ".yml"}
-	for _, ext := range supported {
-		if ext == extension {
-			return true
-		}
-	}
-	return false
-}

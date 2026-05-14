@@ -81,6 +81,13 @@ jobs:
         sudo apt-get install -y gcc-aarch64-linux-gnu
         if [ "${{ matrix.os }}" = "windows" ]; then
           sudo apt-get install -y gcc-mingw-w64
+          # Download WinFSP headers required by cgofuse for Windows FUSE support
+          WINPSP_DIR="/usr/local/include/winfsp"
+          sudo mkdir -p "$WINPSP_DIR/fuse"
+          for f in fuse_common.h fuse.h fuse_opt.h; do
+            sudo curl -fsSL "https://raw.githubusercontent.com/winfsp/winfsp/v2.1/inc/fuse/${f}" -o "$WINPSP_DIR/fuse/${f}"
+          done
+          echo "WINPSP_CFLAGS=-I$WINPSP_DIR" >> $GITHUB_ENV
         fi
 
     - name: Download ONNX Runtime
@@ -142,10 +149,17 @@ jobs:
         BUILD_DIR="build/${{ matrix.os }}-${{ matrix.arch }}"
         mkdir -p "$BUILD_DIR"
 
-        if [ -d "$ONNX_DIR" ]; then
-          export CGO_CFLAGS="-I$PWD/$ONNX_DIR/include"
+        CGO_CFLAGS=""
+        # Skip ONNX Runtime for Windows cross-compilation:
+        # Windows .lib files are not compatible with mingw-w64 linker.
+        if [ "${{ matrix.os }}" != "windows" ] && [ -d "$ONNX_DIR" ]; then
+          CGO_CFLAGS="-I$PWD/$ONNX_DIR/include"
           export CGO_LDFLAGS="-L$PWD/$ONNX_DIR/lib -lonnxruntime"
         fi
+        if [ -n "$WINPSP_CFLAGS" ]; then
+          CGO_CFLAGS="$CGO_CFLAGS $WINPSP_CFLAGS"
+        fi
+        export CGO_CFLAGS
 
         go build \
           -tags "fts5" \
@@ -153,7 +167,7 @@ jobs:
           -o "$BUILD_DIR/$BINARY_NAME" \
           ./cmd/stratafs
 
-        if [ -d "$ONNX_DIR/lib" ]; then
+        if [ "${{ matrix.os }}" != "windows" ] && [ -d "$ONNX_DIR/lib" ]; then
           cp -r "$ONNX_DIR/lib" "$BUILD_DIR/" || true
         fi
 

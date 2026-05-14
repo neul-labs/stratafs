@@ -459,6 +459,6 @@ func clearQueue(t *testing.T, q *queue.Queue) {
 			break
 		}
 		// Mark as completed to remove from queue
-		q.CompleteJob(job.ID)
+		_ = q.CompleteJob(job.ID)
 	}
 }

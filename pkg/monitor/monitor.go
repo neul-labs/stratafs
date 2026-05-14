@@ -225,7 +225,7 @@ func (m *Monitor) Stop() {
 
 	// Stop API server
 	if m.apiServer != nil {
-		m.apiServer.Stop()
+		_ = m.apiServer.Stop()
 	}
 
 	// Stop MCP server
