@@ -64,8 +64,10 @@ func (hp *HTMLParser) Parse(content io.Reader) (string, error) {
 	htmlStr := string(data)
 
 	// Remove script and style content
-	scriptRegex := regexp.MustCompile(`(?s)<(script|style)[^>]*>.*?</\1>`)
+	scriptRegex := regexp.MustCompile(`(?s)<script[^>]*>.*?</script>`)
 	htmlStr = scriptRegex.ReplaceAllString(htmlStr, "")
+	styleRegex := regexp.MustCompile(`(?s)<style[^>]*>.*?</style>`)
+	htmlStr = styleRegex.ReplaceAllString(htmlStr, "")
 
 	// Remove HTML tags
 	tagRegex := regexp.MustCompile(`<[^>]*>`)

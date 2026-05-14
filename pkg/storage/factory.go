@@ -178,7 +178,8 @@ func (sf *StorageFactory) validateGCSCredentials(source config.StorageSource) er
 	// Either credentials_path or default application credentials
 	credentialsPath, _ := source.Credentials["credentials_path"].(string)
 	if credentialsPath == "" {
-		// Will use default application credentials (environment variable, metadata server, etc.)
+		// GCS will fall back to default application credentials
+		_ = credentialsPath
 	}
 
 	return nil

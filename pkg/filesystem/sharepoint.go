@@ -21,7 +21,6 @@ type SharePointFileSystem struct {
 	clientSecret string
 	siteID       string
 	driveID      string
-	rootPath     string
 	localCache   string
 
 	// Token management

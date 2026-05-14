@@ -374,9 +374,3 @@ func (p *StrataFSProcessor) processContentStreaming(directoryID, filePath string
 
 	return nil
 }
-
-// addEmbedJob adds an embedding job to the queue (deprecated - use streaming processing)
-func (p *StrataFSProcessor) addEmbedJob(job *Job) error {
-	_, err := p.queue.AddJob(job.Type, job.FilePath, job.DirectoryID, job.Priority, job.Payload)
-	return err
-}

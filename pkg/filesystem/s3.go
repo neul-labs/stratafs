@@ -8,9 +8,13 @@ import (
 	"strings"
 	"time"
 
+	//nolint:staticcheck // AWS SDK v1 deprecated; migration to v2 planned
 	"github.com/aws/aws-sdk-go/aws"
+	//nolint:staticcheck
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	//nolint:staticcheck
 	"github.com/aws/aws-sdk-go/aws/session"
+	//nolint:staticcheck
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 

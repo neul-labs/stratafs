@@ -128,64 +128,6 @@ func (e *Engine) Search(req *SearchRequest) (*SearchResponse, error) {
 	}, nil
 }
 
-// searchHybrid performs balanced hybrid search
-func (e *Engine) searchHybrid(req *SearchRequest) ([]SearchResult, int64, error) {
-	weights := req.Weights
-	if weights == nil {
-		weights = DefaultWeights()
-	}
-
-	var allResults []SearchResult
-	var maxTotal int64
-
-	// Full-text search component
-	if weights.FullText > 0 && req.Query != "" {
-		ftReq := *req
-		ftReq.Mode = SearchModeFullText
-		ftResults, ftTotal, err := e.searchFullText(&ftReq)
-		if err == nil {
-			// Weight the scores
-			for i := range ftResults {
-				ftResults[i].Score *= weights.FullText
-				ftResults[i].FullTextScore = ftResults[i].Score
-			}
-			allResults = append(allResults, ftResults...)
-			if ftTotal > maxTotal {
-				maxTotal = ftTotal
-			}
-		}
-	}
-
-	// Vector search component
-	if weights.Vector > 0 && req.Query != "" {
-		vecReq := *req
-		vecReq.Mode = SearchModeVector
-		vecResults, vecTotal, err := e.searchVector(&vecReq)
-		if err == nil {
-			// Weight the scores
-			for i := range vecResults {
-				vecResults[i].Score *= weights.Vector
-				vecResults[i].VectorScore = vecResults[i].Score
-			}
-			allResults = append(allResults, vecResults...)
-			if vecTotal > maxTotal {
-				maxTotal = vecTotal
-			}
-		}
-	}
-
-	// Apply metadata scoring
-	e.applyMetadataScoring(allResults, weights, req)
-
-	// Merge and deduplicate results
-	mergedResults := e.mergeResults(allResults)
-
-	// Apply filters
-	filteredResults := e.applyFilters(mergedResults, req.Filters)
-
-	return filteredResults, maxTotal, nil
-}
-
 // searchFullText performs FTS5 full-text search
 func (e *Engine) searchFullText(req *SearchRequest) ([]SearchResult, int64, error) {
 	var allResults []SearchResult
@@ -236,66 +178,6 @@ func (e *Engine) searchFullText(req *SearchRequest) ([]SearchResult, int64, erro
 	return allResults, totalCount, nil
 }
 
-// searchVector performs vector similarity search across all directory indexes
-func (e *Engine) searchVector(req *SearchRequest) ([]SearchResult, int64, error) {
-	if req.Query == "" {
-		return nil, 0, fmt.Errorf("vector search requires a query")
-	}
-
-	// Generate query embedding
-	queryEmbedding, err := e.embedder.Embed(req.Query)
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to generate query embedding: %w", err)
-	}
-
-	var allResults []SearchResult
-
-	// Search each directory's vector index
-	for dirPath, vectorIndex := range e.vectorIndexes {
-		db := e.databases[dirPath]
-
-		// Search this directory's vector index
-		vectorResults, err := vectorIndex.SearchSimilar(queryEmbedding, req.Limit*2)
-		if err != nil {
-			fmt.Printf("Warning: failed to search vector index for %s: %v\n", dirPath, err)
-			continue
-		}
-
-		// Convert vector results to search results
-		for _, vecResult := range vectorResults {
-			if chunk, err := db.GetChunkByID(vecResult.ChunkID); err == nil {
-				result := SearchResult{
-					ID:          chunk.ID,
-					FileID:      chunk.FileID,
-					ChunkID:     &chunk.ID,
-					Content:     chunk.Content,
-					Score:       vecResult.Score,
-					VectorScore: vecResult.Score,
-				}
-
-				// Get file metadata
-				if file, err := db.GetFileByID(chunk.FileID); err == nil {
-					result.FilePath = file.Path
-					result.Metadata = e.buildFileMetadata(file, dirPath)
-				}
-
-				allResults = append(allResults, result)
-			}
-		}
-	}
-
-	// Sort by score and limit results
-	sort.Slice(allResults, func(i, j int) bool {
-		return allResults[i].Score > allResults[j].Score
-	})
-
-	if len(allResults) > req.Limit {
-		allResults = allResults[:req.Limit]
-	}
-
-	return allResults, int64(len(allResults)), nil
-}
-
 // searchFaceted performs metadata-based filtering
 func (e *Engine) searchFaceted(req *SearchRequest) ([]SearchResult, int64, error) {
 	var allResults []SearchResult
@@ -343,12 +225,6 @@ func (e *Engine) searchFaceted(req *SearchRequest) ([]SearchResult, int64, error
 	}
 
 	return allResults, totalCount, nil
-}
-
-// searchWeighted performs custom weighted search
-func (e *Engine) searchWeighted(req *SearchRequest) ([]SearchResult, int64, error) {
-	// Weighted search is similar to hybrid but with custom weights
-	return e.searchHybrid(req)
 }
 
 // GetDocument retrieves a complete document
@@ -501,109 +377,6 @@ func (e *Engine) matchesFilters(file *database.File, directory string, filters *
 	}
 	if filters.ModifiedBefore != nil && file.UpdatedAt.After(*filters.ModifiedBefore) {
 		return false
-	}
-
-	return true
-}
-
-func (e *Engine) applyMetadataScoring(results []SearchResult, weights *SearchWeights, req *SearchRequest) {
-	now := time.Now()
-
-	for i := range results {
-		result := &results[i]
-
-		// Recency scoring
-		if weights.Recency > 0 && result.Metadata != nil {
-			daysSinceModified := now.Sub(result.Metadata.ModifiedAt).Hours() / 24
-			recencyScore := math.Exp(-daysSinceModified / 30.0) // Decay over 30 days
-			result.RecencyScore = recencyScore * weights.Recency
-			result.Score += result.RecencyScore
-		}
-
-		// Filename scoring
-		if weights.Filename > 0 && req.Query != "" && result.Metadata != nil {
-			filename := strings.ToLower(result.Metadata.FileName)
-			query := strings.ToLower(req.Query)
-			if strings.Contains(filename, query) {
-				filenameScore := 1.0 * weights.Filename
-				result.FilenameScore = filenameScore
-				result.Score += filenameScore
-			}
-		}
-	}
-}
-
-func (e *Engine) mergeResults(results []SearchResult) []SearchResult {
-	// Group by file/chunk ID and merge scores
-	resultMap := make(map[string]*SearchResult)
-
-	for _, result := range results {
-		var key string
-		if result.ChunkID != nil {
-			key = fmt.Sprintf("chunk_%d", *result.ChunkID)
-		} else {
-			key = fmt.Sprintf("file_%d", result.FileID)
-		}
-
-		if existing, exists := resultMap[key]; exists {
-			// Merge scores
-			existing.Score += result.Score
-			if result.FullTextScore > 0 {
-				existing.FullTextScore += result.FullTextScore
-			}
-			if result.VectorScore > 0 {
-				existing.VectorScore += result.VectorScore
-			}
-		} else {
-			resultMap[key] = &result
-		}
-	}
-
-	// Convert back to slice
-	merged := make([]SearchResult, 0, len(resultMap))
-	for _, result := range resultMap {
-		merged = append(merged, *result)
-	}
-
-	return merged
-}
-
-func (e *Engine) applyFilters(results []SearchResult, filters *SearchFilters) []SearchResult {
-	if filters == nil {
-		return results
-	}
-
-	var filtered []SearchResult
-	for _, result := range results {
-		if e.matchesResultFilters(result, filters) {
-			filtered = append(filtered, result)
-		}
-	}
-
-	return filtered
-}
-
-func (e *Engine) matchesResultFilters(result SearchResult, filters *SearchFilters) bool {
-	if filters == nil {
-		return true
-	}
-
-	if result.Metadata == nil {
-		return true
-	}
-
-	// Apply the same filters as matchesFilters but on SearchResult
-	if len(filters.FileExtensions) > 0 {
-		found := false
-		for _, filterExt := range filters.FileExtensions {
-			if result.Metadata.FileExt == filterExt {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
 	}
 
 	return true

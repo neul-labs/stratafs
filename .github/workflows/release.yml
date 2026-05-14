@@ -39,7 +39,7 @@ jobs:
     - name: Install Linux dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libwebkit2gtk-4.0-dev libgtk-3-dev pkg-config
+        sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev pkg-config
 
     - name: Build stratafs-ui
       working-directory: desktop/stratafs-ui
@@ -93,19 +93,22 @@ jobs:
         OS_NAME="${{ matrix.os }}"
         ARCH_NAME="${{ matrix.arch }}"
 
-        # Map architecture names
-        case "$ARCH_NAME" in
-          amd64) ONNX_ARCH="x64" ;;
-          arm64) ONNX_ARCH="arm64" ;;
-          arm) ONNX_ARCH="arm" ;;
-          386) ONNX_ARCH="x86" ;;
-        esac
-
         # Map OS names
         case "$OS_NAME" in
           linux) ONNX_OS="linux" ;;
           darwin) ONNX_OS="osx" ;;
           windows) ONNX_OS="win" ;;
+        esac
+
+        # Map architecture names. Note: the macOS x86_64 build is published
+        # as "x86_64", not "x64" like Linux/Windows.
+        case "$ARCH_NAME" in
+          amd64)
+            if [ "$ONNX_OS" = "osx" ]; then ONNX_ARCH="x86_64"; else ONNX_ARCH="x64"; fi
+            ;;
+          arm64) ONNX_ARCH="arm64" ;;
+          arm) ONNX_ARCH="arm" ;;
+          386) ONNX_ARCH="x86" ;;
         esac
 
         ONNX_NAME="onnxruntime-${ONNX_OS}-${ONNX_ARCH}-${ONNX_VERSION}"

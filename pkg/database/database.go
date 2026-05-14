@@ -563,7 +563,8 @@ func (db *DB) OptimizeIndexes() error {
 	// Optimize FTS5 index if available
 	_, err := db.conn.Exec("INSERT INTO chunks_fts(chunks_fts) VALUES('optimize')")
 	if err != nil {
-		// FTS5 might not be available, ignore the error
+		// FTS5 optimize is best-effort; non-fatal if unavailable
+		_ = err
 	}
 
 	// Analyze all tables to update statistics

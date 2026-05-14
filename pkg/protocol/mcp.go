@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 
 	"github.com/neul-labs/stratafs/pkg/database"
@@ -98,7 +99,9 @@ func (mcp *ModelContextProtocol) handleSearch(w http.ResponseWriter, r *http.Req
 	
 	limit := 10
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		// In a real implementation, we would parse the limit
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
 	}
 	
 	var results []map[string]interface{}

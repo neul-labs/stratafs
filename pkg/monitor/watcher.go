@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -355,7 +356,7 @@ func isSubPath(path, root string) bool {
 		return false
 	}
 
-	return !filepath.IsAbs(rel) && !filepath.HasPrefix(rel, "..")
+	return !filepath.IsAbs(rel) && !strings.HasPrefix(rel, "..")
 }
 
 // calculateChecksum calculates MD5 checksum of a file

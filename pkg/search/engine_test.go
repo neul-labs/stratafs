@@ -80,7 +80,7 @@ func TestBasicSearch(t *testing.T) {
 	}
 
 	if response == nil {
-		t.Error("Response should not be nil")
+		t.Fatal("Response should not be nil")
 	}
 
 	// Basic validation - we don't expect specific results since search depends on SQLite FTS
