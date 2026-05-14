@@ -240,8 +240,8 @@ func (fs *SharePointFileSystem) ReadFile(name string) ([]byte, error) {
 	// Cache locally
 	if fs.localCache != "" {
 		cacheDir := filepath.Dir(cachePath)
-		os.MkdirAll(cacheDir, 0755)
-		os.WriteFile(cachePath, data, 0644)
+		_ = os.MkdirAll(cacheDir, 0755)
+		_ = os.WriteFile(cachePath, data, 0644)
 	}
 
 	return data, nil

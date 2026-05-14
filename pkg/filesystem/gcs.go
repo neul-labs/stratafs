@@ -8,19 +8,19 @@ import (
 
 // GCSFileSystem implements FileSystem for Google Cloud Storage (placeholder)
 type GCSFileSystem struct {
-	bucket      string
-	prefix      string
-	projectID   string
-	credPath    string
+	bucket    string
+	prefix    string
+	projectID string
+	credPath  string
 }
 
 // NewGCSFileSystem creates a new GCS filesystem (placeholder implementation)
 func NewGCSFileSystem(bucket, prefix, projectID, credentialsPath string) (*GCSFileSystem, error) {
 	return &GCSFileSystem{
-		bucket:   bucket,
-		prefix:   prefix,
+		bucket:    bucket,
+		prefix:    prefix,
 		projectID: projectID,
-		credPath: credentialsPath,
+		credPath:  credentialsPath,
 	}, fmt.Errorf("GCS filesystem not yet implemented - please use S3 or local storage")
 }
 

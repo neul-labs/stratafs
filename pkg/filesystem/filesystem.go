@@ -12,28 +12,28 @@ import (
 type FileSystem interface {
 	// ReadFile reads the content of a file
 	ReadFile(name string) ([]byte, error)
-	
+
 	// Open opens a file for reading
 	Open(name string) (File, error)
-	
+
 	// Stat returns information about a file
 	Stat(name string) (FileInfo, error)
-	
+
 	// Walk walks the file tree rooted at root
 	Walk(root string, walkFn WalkFunc) error
-	
+
 	// MkdirAll creates a directory path and all parents that does not exist
 	MkdirAll(path string, perm os.FileMode) error
-	
+
 	// Join joins any number of path elements into a single path
 	Join(elem ...string) string
-	
+
 	// Base returns the last element of path
 	Base(path string) string
-	
+
 	// Dir returns all but the last element of path
 	Dir(path string) string
-	
+
 	// Ext returns the file name extension used by path
 	Ext(path string) string
 }

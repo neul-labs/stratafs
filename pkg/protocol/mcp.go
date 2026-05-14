@@ -223,7 +223,7 @@ func (mcp *ModelContextProtocol) handleUnifiedSearch(w http.ResponseWriter, r *h
 
 	// Return MCP-compatible response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"type":    "search_response",
 		"results": response.Results,
 		"total":   response.Total,
@@ -271,7 +271,7 @@ func (mcp *ModelContextProtocol) handleDocuments(w http.ResponseWriter, r *http.
 
 	// Return MCP-compatible response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"type":     "document_response",
 		"file":     response.File,
 		"chunks":   response.Chunks,
