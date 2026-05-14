@@ -75,7 +75,7 @@ func (m *FileUpdateManager) replaceChunks(fileID int64, chunks []ChunkData) erro
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Delete existing chunks
 	_, err = tx.Exec("DELETE FROM file_chunks WHERE file_id = ?", fileID)
@@ -101,7 +101,7 @@ func (m *FileUpdateManager) softDeleteAndReplaceChunks(fileID int64, chunks []Ch
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Soft delete existing chunks
 	_, err = tx.Exec(`
@@ -131,7 +131,7 @@ func (m *FileUpdateManager) versionedUpdateChunks(fileID int64, chunks []ChunkDa
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Get existing chunks for comparison
 	existingChunks, err := m.getExistingChunks(tx, fileID)

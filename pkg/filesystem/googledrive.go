@@ -370,7 +370,10 @@ func (fs *GoogleDriveFileSystem) GetChanges(ctx context.Context) ([]GoogleDriveC
 		var result struct {
 			StartPageToken string `json:"startPageToken"`
 		}
-		json.NewDecoder(resp.Body).Decode(&result)
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			resp.Body.Close()
+			return nil, fmt.Errorf("failed to decode start page token: %w", err)
+		}
 		resp.Body.Close()
 
 		pageToken = result.StartPageToken

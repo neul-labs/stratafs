@@ -70,7 +70,7 @@ func TestFileWatcherLifecycle(t *testing.T) {
 		}
 
 		// Wait for file system event processing
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 
 		// Check if job was queued
 		jobs := getQueuedJobs(t, testQueue)
@@ -116,7 +116,7 @@ func TestFileWatcherLifecycle(t *testing.T) {
 			t.Fatalf("Failed to create initial file: %v", err)
 		}
 
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 
 		// Clear existing jobs
 		clearQueue(t, testQueue)
@@ -128,7 +128,7 @@ func TestFileWatcherLifecycle(t *testing.T) {
 			t.Fatalf("Failed to modify file: %v", err)
 		}
 
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 
 		// Check if modification was detected
 		jobs := getQueuedJobs(t, testQueue)
@@ -156,7 +156,7 @@ func TestFileWatcherLifecycle(t *testing.T) {
 			t.Fatalf("Failed to create file for deletion: %v", err)
 		}
 
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 		clearQueue(t, testQueue)
 
 		// Delete file
@@ -165,7 +165,7 @@ func TestFileWatcherLifecycle(t *testing.T) {
 			t.Fatalf("Failed to delete file: %v", err)
 		}
 
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 
 		// Check if deletion was detected
 		jobs := getQueuedJobs(t, testQueue)
@@ -197,7 +197,7 @@ func TestFileWatcherLifecycle(t *testing.T) {
 			t.Fatalf("Failed to create directory: %v", err)
 		}
 
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 
 		// Create file in new directory
 		testFile := filepath.Join(newDir, "test.go")
@@ -207,7 +207,7 @@ func TestFileWatcherLifecycle(t *testing.T) {
 			t.Fatalf("Failed to create file in new directory: %v", err)
 		}
 
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 
 		// Check if file in new directory was detected
 		jobs := getQueuedJobs(t, testQueue)
@@ -345,7 +345,7 @@ func TestPeriodicScan(t *testing.T) {
 	}
 
 	// Wait for periodic scan to detect existing file
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	// Check if existing file was detected by periodic scan
 	jobs := getQueuedJobs(t, testQueue)
@@ -415,7 +415,7 @@ func TestIgnoreAgentDirectories(t *testing.T) {
 		t.Fatalf("Failed to create agent file: %v", err)
 	}
 
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	// Check that no jobs were created for agent directory files
 	jobs := getQueuedJobs(t, testQueue)

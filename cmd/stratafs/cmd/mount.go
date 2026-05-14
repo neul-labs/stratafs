@@ -19,8 +19,8 @@ var mountCmd = &cobra.Command{
 	Short: "Mount StrataFS as a FUSE filesystem",
 	Long:  `Mounts the StrataFS virtual filesystem at the specified mount point using FUSE.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if runtime.GOOS == "windows" {
-			return fmt.Errorf("FUSE mount is not supported on Windows")
+		if runtime.GOOS != "linux" {
+			return fmt.Errorf("FUSE mount is not supported on %s", runtime.GOOS)
 		}
 
 		mountPoint, _ := cmd.Flags().GetString("mount-point")

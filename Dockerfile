@@ -21,15 +21,17 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Install ONNX Runtime
+# Install ONNX Runtime (architecture-aware)
+ARG TARGETARCH
 RUN mkdir -p /opt/onnxruntime && \
-    curl -fsSL https://github.com/microsoft/onnxruntime/releases/download/v1.16.3/onnxruntime-linux-x64-1.16.3.tgz | \
+    ONNX_ARCH=$(if [ "$TARGETARCH" = "arm64" ]; then echo "aarch64"; else echo "x64"; fi) && \
+    curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v1.16.3/onnxruntime-linux-${ONNX_ARCH}-1.16.3.tgz" | \
     tar -xz -C /opt/onnxruntime --strip-components=1
 
 # Build the application
 ENV CGO_CFLAGS="-I/opt/onnxruntime/include"
 ENV CGO_LDFLAGS="-L/opt/onnxruntime/lib -lonnxruntime"
-RUN CGO_ENABLED=1 GOOS=linux go build \
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=${TARGETARCH} go build \
     -tags "fts5" \
     -ldflags "-w -s" \
     -o stratafs \

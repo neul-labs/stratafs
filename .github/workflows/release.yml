@@ -83,9 +83,9 @@ jobs:
           sudo apt-get install -y gcc-mingw-w64
           # Download WinFSP headers required by cgofuse for Windows FUSE support
           WINPSP_DIR="/usr/local/include/winfsp"
-          sudo mkdir -p "$WINPSP_DIR/fuse"
+          sudo mkdir -p "$WINPSP_DIR"
           for f in fuse_common.h fuse.h fuse_opt.h; do
-            sudo curl -fsSL "https://raw.githubusercontent.com/winfsp/winfsp/v2.1/inc/fuse/${f}" -o "$WINPSP_DIR/fuse/${f}"
+            sudo curl -fsSL "https://raw.githubusercontent.com/winfsp/winfsp/v2.1/inc/fuse/${f}" -o "$WINPSP_DIR/${f}"
           done
           echo "WINPSP_CFLAGS=-I$WINPSP_DIR" >> $GITHUB_ENV
         fi
