@@ -255,4 +255,3 @@ func TestCSVLargeFile(t *testing.T) {
 		t.Error("Expected correct total row count")
 	}
 }
-

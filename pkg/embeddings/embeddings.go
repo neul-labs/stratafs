@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/neul-labs/stratafs/pkg/config"
 	"github.com/anush008/fastembed-go"
+	"github.com/neul-labs/stratafs/pkg/config"
 )
 
 // Embedder provides text embedding functionality using FastEmbed

@@ -148,7 +148,7 @@ func (fw *FileWatcher) processEvents() {
 func (fw *FileWatcher) handleEvent(event fsnotify.Event) {
 	// Skip events for .stratafs directories
 	if filepath.Base(filepath.Dir(event.Name)) == fw.config.AgentDir ||
-	   filepath.Base(event.Name) == fw.config.AgentDir {
+		filepath.Base(event.Name) == fw.config.AgentDir {
 		return
 	}
 

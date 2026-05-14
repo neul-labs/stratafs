@@ -10,10 +10,10 @@ import (
 
 // HybridFileSystem wraps a remote filesystem with local caching for directory structure compatibility
 type HybridFileSystem struct {
-	remote    FileSystem // The actual remote filesystem (S3, GCS, etc.)
-	local     FileSystem // Local filesystem for cache directory
-	cacheDir  string     // Local cache directory path
-	sourceID  string     // Source ID for cache organization
+	remote   FileSystem // The actual remote filesystem (S3, GCS, etc.)
+	local    FileSystem // Local filesystem for cache directory
+	cacheDir string     // Local cache directory path
+	sourceID string     // Source ID for cache organization
 }
 
 // NewHybridFileSystem creates a new hybrid filesystem that mirrors remote content locally

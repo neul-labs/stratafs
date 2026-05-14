@@ -15,7 +15,7 @@ import (
 
 // SpreadsheetParser handles Microsoft Excel formats (XLSX, XLS)
 type SpreadsheetParser struct {
-	filePath       string
+	filePath        string
 	spreadsheetType string
 }
 
@@ -36,7 +36,7 @@ func NewSpreadsheetParser(filePath string) *SpreadsheetParser {
 	}
 
 	return &SpreadsheetParser{
-		filePath:       filePath,
+		filePath:        filePath,
 		spreadsheetType: sheetType,
 	}
 }

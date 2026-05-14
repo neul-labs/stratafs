@@ -22,7 +22,7 @@ func NewAdvancedCodeParser(extension string) *AdvancedCodeParser {
 // Parse reads and parses the content of a code file, extracting comments and documentation
 func (acp *AdvancedCodeParser) Parse(content io.Reader) (string, error) {
 	scanner := bufio.NewScanner(content)
-	
+
 	switch acp.extension {
 	case ".go":
 		return acp.parseGoFile(scanner)
@@ -55,39 +55,39 @@ func (acp *AdvancedCodeParser) Supports(extension string) bool {
 func (acp *AdvancedCodeParser) parseGoFile(scanner *bufio.Scanner) (string, error) {
 	var result strings.Builder
 	inBlockComment := false
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		// Handle block comments
 		if strings.Contains(line, "/*") && !inBlockComment {
 			inBlockComment = true
 		}
-		
+
 		if inBlockComment {
 			result.WriteString(line)
 			result.WriteString("\n")
-			
+
 			if strings.Contains(line, "*/") {
 				inBlockComment = false
 			}
 			continue
 		}
-		
+
 		// Handle single line comments
 		if strings.HasPrefix(strings.TrimSpace(line), "//") {
 			result.WriteString(line)
 			result.WriteString("\n")
 			continue
 		}
-		
+
 		// Include package and import statements
 		if strings.HasPrefix(line, "package ") || strings.HasPrefix(line, "import ") {
 			result.WriteString(line)
 			result.WriteString("\n")
 			continue
 		}
-		
+
 		// Include function and type declarations (without implementation)
 		if strings.HasPrefix(line, "func ") || strings.HasPrefix(line, "type ") || strings.HasPrefix(line, "var ") || strings.HasPrefix(line, "const ") {
 			result.WriteString(line)
@@ -95,11 +95,11 @@ func (acp *AdvancedCodeParser) parseGoFile(scanner *bufio.Scanner) (string, erro
 			continue
 		}
 	}
-	
+
 	if err := scanner.Err(); err != nil {
 		return "", fmt.Errorf("error scanning file: %w", err)
 	}
-	
+
 	return result.String(), nil
 }
 
@@ -108,10 +108,10 @@ func (acp *AdvancedCodeParser) parsePythonFile(scanner *bufio.Scanner) (string, 
 	var result strings.Builder
 	inMultilineString := false
 	multilineDelimiter := ""
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		// Handle multiline strings (docstrings)
 		if !inMultilineString && (strings.HasPrefix(line, `"""`) || strings.HasPrefix(line, `'''`)) {
 			inMultilineString = true
@@ -122,31 +122,31 @@ func (acp *AdvancedCodeParser) parsePythonFile(scanner *bufio.Scanner) (string, 
 			}
 			result.WriteString(line)
 			result.WriteString("\n")
-			
+
 			// Check if it's a single line multiline string
 			if strings.Count(line, multilineDelimiter) == 2 {
 				inMultilineString = false
 			}
 			continue
 		}
-		
+
 		if inMultilineString {
 			result.WriteString(line)
 			result.WriteString("\n")
-			
+
 			if strings.Contains(line, multilineDelimiter) {
 				inMultilineString = false
 			}
 			continue
 		}
-		
+
 		// Handle single line comments
 		if strings.HasPrefix(strings.TrimSpace(line), "#") {
 			result.WriteString(line)
 			result.WriteString("\n")
 			continue
 		}
-		
+
 		// Include function and class definitions
 		if strings.HasPrefix(line, "def ") || strings.HasPrefix(line, "class ") {
 			result.WriteString(line)
@@ -154,11 +154,11 @@ func (acp *AdvancedCodeParser) parsePythonFile(scanner *bufio.Scanner) (string, 
 			continue
 		}
 	}
-	
+
 	if err := scanner.Err(); err != nil {
 		return "", fmt.Errorf("error scanning file: %w", err)
 	}
-	
+
 	return result.String(), nil
 }
 
@@ -166,32 +166,32 @@ func (acp *AdvancedCodeParser) parsePythonFile(scanner *bufio.Scanner) (string, 
 func (acp *AdvancedCodeParser) parseJavaScriptFile(scanner *bufio.Scanner) (string, error) {
 	var result strings.Builder
 	inBlockComment := false
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		// Handle block comments
 		if strings.Contains(line, "/*") && !inBlockComment {
 			inBlockComment = true
 		}
-		
+
 		if inBlockComment {
 			result.WriteString(line)
 			result.WriteString("\n")
-			
+
 			if strings.Contains(line, "*/") {
 				inBlockComment = false
 			}
 			continue
 		}
-		
+
 		// Handle single line comments
 		if strings.HasPrefix(strings.TrimSpace(line), "//") {
 			result.WriteString(line)
 			result.WriteString("\n")
 			continue
 		}
-		
+
 		// Include function and class definitions
 		if strings.Contains(line, "function ") || strings.Contains(line, "class ") || strings.HasPrefix(line, "const ") || strings.HasPrefix(line, "let ") || strings.HasPrefix(line, "var ") {
 			result.WriteString(line)
@@ -199,10 +199,10 @@ func (acp *AdvancedCodeParser) parseJavaScriptFile(scanner *bufio.Scanner) (stri
 			continue
 		}
 	}
-	
+
 	if err := scanner.Err(); err != nil {
 		return "", fmt.Errorf("error scanning file: %w", err)
 	}
-	
+
 	return result.String(), nil
 }

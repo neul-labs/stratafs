@@ -26,8 +26,8 @@ type Server struct {
 
 // SearchResult represents a search result
 type SearchResult struct {
-	File  string `json:"file"`
-	Chunk string `json:"chunk"`
+	File  string  `json:"file"`
+	Chunk string  `json:"chunk"`
 	Score float64 `json:"score"`
 }
 
@@ -44,7 +44,7 @@ func NewServer(cfg *config.Config, databases map[string]*database.DB, jobQueue *
 // Start starts the HTTP server
 func (s *Server) Start() error {
 	mux := http.NewServeMux()
-	
+
 	// Register handlers
 	mux.HandleFunc("/search", s.handleUnifiedSearch)
 	mux.HandleFunc("/documents/", s.handleDocument)
@@ -53,13 +53,13 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/docs", s.handleSwagger)
 	mux.HandleFunc("/redoc", s.handleRedoc)
 	mux.HandleFunc("/openapi.json", s.handleOpenAPI)
-	
+
 	// Create server
 	s.server = &http.Server{
 		Addr:    ":8080",
 		Handler: mux,
 	}
-	
+
 	// Start server in a goroutine
 	go func() {
 		fmt.Println("Starting API server on :8080")
@@ -67,7 +67,7 @@ func (s *Server) Start() error {
 			fmt.Printf("API server error: %v\n", err)
 		}
 	}()
-	
+
 	return nil
 }
 
@@ -76,10 +76,10 @@ func (s *Server) Stop() error {
 	if s.server == nil {
 		return nil
 	}
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	return s.server.Shutdown(ctx)
 }
 
@@ -87,7 +87,7 @@ func (s *Server) Stop() error {
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]string{
-		"status": "ok",
+		"status":  "ok",
 		"version": s.config.Version,
 	})
 }
@@ -133,7 +133,7 @@ func (s *Server) handleUnifiedSearch(w http.ResponseWriter, r *http.Request) {
 
 	// Return response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // handleQueueStats returns job queue statistics
@@ -150,12 +150,11 @@ func (s *Server) handleQueueStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"queue_stats": stats,
 		"timestamp":   time.Now(),
 	})
 }
-
 
 // handleDocument handles document retrieval requests
 func (s *Server) handleDocument(w http.ResponseWriter, r *http.Request) {
@@ -205,7 +204,7 @@ func (s *Server) handleDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // parseSearchParams parses query parameters into a SearchRequest
@@ -292,7 +291,7 @@ func (s *Server) parseSearchParams(r *http.Request) search.SearchRequest {
 func (s *Server) handleOpenAPI(w http.ResponseWriter, r *http.Request) {
 	spec := s.getOpenAPISpec()
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(spec)
+	_ = json.NewEncoder(w).Encode(spec)
 }
 
 // handleSwagger serves the Swagger UI
@@ -396,8 +395,8 @@ func (s *Server) getOpenAPISpec() map[string]interface{} {
 							"description": "Search mode",
 							"required":    false,
 							"schema": map[string]interface{}{
-								"type": "string",
-								"enum": []string{"hybrid", "fulltext", "vector", "faceted", "weighted"},
+								"type":    "string",
+								"enum":    []string{"hybrid", "fulltext", "vector", "faceted", "weighted"},
 								"default": "hybrid",
 							},
 						},
@@ -421,8 +420,8 @@ func (s *Server) getOpenAPISpec() map[string]interface{} {
 							"description": "Sort results by field",
 							"required":    false,
 							"schema": map[string]interface{}{
-								"type": "string",
-								"enum": []string{"relevance", "modified", "created", "size", "name"},
+								"type":    "string",
+								"enum":    []string{"relevance", "modified", "created", "size", "name"},
 								"default": "relevance",
 							},
 						},
@@ -432,8 +431,8 @@ func (s *Server) getOpenAPISpec() map[string]interface{} {
 							"description": "Sort order",
 							"required":    false,
 							"schema": map[string]interface{}{
-								"type": "string",
-								"enum": []string{"asc", "desc"},
+								"type":    "string",
+								"enum":    []string{"asc", "desc"},
 								"default": "desc",
 							},
 						},
@@ -616,8 +615,8 @@ func (s *Server) getOpenAPISpec() map[string]interface{} {
 							"description": "Response format",
 							"required":    false,
 							"schema": map[string]interface{}{
-								"type": "string",
-								"enum": []string{"json", "text"},
+								"type":    "string",
+								"enum":    []string{"json", "text"},
 								"default": "json",
 							},
 						},

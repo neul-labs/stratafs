@@ -8,11 +8,11 @@ import (
 type SearchMode string
 
 const (
-	SearchModeHybrid    SearchMode = "hybrid"    // Balanced combination of all search types
-	SearchModeFullText  SearchMode = "fulltext"  // FTS5 full-text search only
-	SearchModeVector    SearchMode = "vector"    // Vector similarity search only
-	SearchModeFaceted   SearchMode = "faceted"   // Metadata-based filtering only
-	SearchModeWeighted  SearchMode = "weighted"  // Custom weighted combination
+	SearchModeHybrid   SearchMode = "hybrid"   // Balanced combination of all search types
+	SearchModeFullText SearchMode = "fulltext" // FTS5 full-text search only
+	SearchModeVector   SearchMode = "vector"   // Vector similarity search only
+	SearchModeFaceted  SearchMode = "faceted"  // Metadata-based filtering only
+	SearchModeWeighted SearchMode = "weighted" // Custom weighted combination
 )
 
 // SearchRequest represents a comprehensive search query
@@ -21,7 +21,7 @@ type SearchRequest struct {
 	Query string `json:"query"`
 
 	// Search mode and weights
-	Mode    SearchMode `json:"mode"`
+	Mode    SearchMode     `json:"mode"`
 	Weights *SearchWeights `json:"weights,omitempty"`
 
 	// Faceted filters
@@ -43,12 +43,12 @@ type SearchRequest struct {
 
 // SearchWeights defines weights for different search components
 type SearchWeights struct {
-	FullText   float64 `json:"fulltext"`   // Weight for full-text search results
-	Vector     float64 `json:"vector"`     // Weight for vector similarity results
-	Recency    float64 `json:"recency"`    // Weight for file recency
-	Filename   float64 `json:"filename"`   // Weight for filename matches
-	FileType   float64 `json:"filetype"`   // Weight for file type relevance
-	FileSize   float64 `json:"filesize"`   // Weight for file size relevance
+	FullText float64 `json:"fulltext"` // Weight for full-text search results
+	Vector   float64 `json:"vector"`   // Weight for vector similarity results
+	Recency  float64 `json:"recency"`  // Weight for file recency
+	Filename float64 `json:"filename"` // Weight for filename matches
+	FileType float64 `json:"filetype"` // Weight for file type relevance
+	FileSize float64 `json:"filesize"` // Weight for file size relevance
 }
 
 // DefaultWeights returns balanced weights for hybrid search
@@ -104,13 +104,13 @@ type SearchResult struct {
 	Description string `json:"description,omitempty"` // Brief description
 
 	// Scoring
-	Score          float64 `json:"score"`                     // Overall relevance score
-	FullTextScore  float64 `json:"fulltext_score,omitempty"`  // FTS score component
-	VectorScore    float64 `json:"vector_score,omitempty"`    // Vector similarity score
-	RecencyScore   float64 `json:"recency_score,omitempty"`   // Recency score component
-	FilenameScore  float64 `json:"filename_score,omitempty"`  // Filename match score
-	FileTypeScore  float64 `json:"filetype_score,omitempty"`  // File type relevance
-	FileSizeScore  float64 `json:"filesize_score,omitempty"`  // File size relevance
+	Score         float64 `json:"score"`                    // Overall relevance score
+	FullTextScore float64 `json:"fulltext_score,omitempty"` // FTS score component
+	VectorScore   float64 `json:"vector_score,omitempty"`   // Vector similarity score
+	RecencyScore  float64 `json:"recency_score,omitempty"`  // Recency score component
+	FilenameScore float64 `json:"filename_score,omitempty"` // Filename match score
+	FileTypeScore float64 `json:"filetype_score,omitempty"` // File type relevance
+	FileSizeScore float64 `json:"filesize_score,omitempty"` // File size relevance
 
 	// Metadata
 	Metadata *FileMetadata `json:"metadata,omitempty"`
@@ -123,12 +123,12 @@ type SearchResult struct {
 // FileMetadata contains comprehensive file information
 type FileMetadata struct {
 	// Basic file info
-	FileName     string    `json:"file_name"`
-	FileExt      string    `json:"file_extension"`
-	FileType     string    `json:"file_type"`     // "code", "document", "text", etc.
-	Directory    string    `json:"directory"`
-	Size         int64     `json:"size"`
-	Checksum     string    `json:"checksum"`
+	FileName  string `json:"file_name"`
+	FileExt   string `json:"file_extension"`
+	FileType  string `json:"file_type"` // "code", "document", "text", etc.
+	Directory string `json:"directory"`
+	Size      int64  `json:"size"`
+	Checksum  string `json:"checksum"`
 
 	// Timestamps
 	CreatedAt  time.Time `json:"created_at"`
@@ -136,16 +136,16 @@ type FileMetadata struct {
 	IndexedAt  time.Time `json:"indexed_at"`
 
 	// Content info
-	ContentLength   int    `json:"content_length"`
-	ChunkCount      int    `json:"chunk_count"`
-	Language        string `json:"language,omitempty"`        // Programming language
-	ParserType      string `json:"parser_type,omitempty"`     // Parser used
-	HasEmbeddings   bool   `json:"has_embeddings"`
+	ContentLength int    `json:"content_length"`
+	ChunkCount    int    `json:"chunk_count"`
+	Language      string `json:"language,omitempty"`    // Programming language
+	ParserType    string `json:"parser_type,omitempty"` // Parser used
+	HasEmbeddings bool   `json:"has_embeddings"`
 
 	// Statistics
-	WordCount       int    `json:"word_count,omitempty"`
-	LineCount       int    `json:"line_count,omitempty"`
-	CommentRatio    float64 `json:"comment_ratio,omitempty"`   // For code files
+	WordCount    int     `json:"word_count,omitempty"`
+	LineCount    int     `json:"line_count,omitempty"`
+	CommentRatio float64 `json:"comment_ratio,omitempty"` // For code files
 }
 
 // SearchResponse contains search results and metadata
@@ -163,11 +163,11 @@ type SearchResponse struct {
 	Facets *SearchFacets `json:"facets,omitempty"`
 
 	// Pagination
-	Limit     int  `json:"limit"`
-	Offset    int  `json:"offset"`
-	HasMore   bool `json:"has_more"`
-	NextPage  *int `json:"next_page,omitempty"`
-	PrevPage  *int `json:"prev_page,omitempty"`
+	Limit    int  `json:"limit"`
+	Offset   int  `json:"offset"`
+	HasMore  bool `json:"has_more"`
+	NextPage *int `json:"next_page,omitempty"`
+	PrevPage *int `json:"prev_page,omitempty"`
 }
 
 // SearchFacets provides aggregated information for filtering
@@ -185,10 +185,10 @@ type SearchFacets struct {
 	DateRanges map[string]int64 `json:"date_ranges"` // Range -> count
 
 	// Content statistics
-	AvgFileSize    float64 `json:"avg_file_size"`
-	AvgContentLen  float64 `json:"avg_content_length"`
-	TotalFiles     int64   `json:"total_files"`
-	TotalChunks    int64   `json:"total_chunks"`
+	AvgFileSize   float64 `json:"avg_file_size"`
+	AvgContentLen float64 `json:"avg_content_length"`
+	TotalFiles    int64   `json:"total_files"`
+	TotalChunks   int64   `json:"total_chunks"`
 }
 
 // DocumentRequest represents a request to retrieve a full document
@@ -218,9 +218,9 @@ type FileDocument struct {
 
 // ChunkDocument represents a file chunk
 type ChunkDocument struct {
-	ID          int64     `json:"id"`
-	Content     string    `json:"content"`
-	Offset      int       `json:"offset"`
-	Length      int       `json:"length"`
-	Embedding   []float32 `json:"embedding,omitempty"`
+	ID        int64     `json:"id"`
+	Content   string    `json:"content"`
+	Offset    int       `json:"offset"`
+	Length    int       `json:"length"`
+	Embedding []float32 `json:"embedding,omitempty"`
 }

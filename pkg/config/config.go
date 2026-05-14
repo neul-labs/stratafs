@@ -27,25 +27,25 @@ const (
 type StorageType string
 
 const (
-	StorageTypeLocal      StorageType = "local"
-	StorageTypeS3         StorageType = "s3"
-	StorageTypeGCS        StorageType = "gcs"
-	StorageTypeAzure      StorageType = "azure"
-	StorageTypeSharePoint StorageType = "sharepoint"
+	StorageTypeLocal       StorageType = "local"
+	StorageTypeS3          StorageType = "s3"
+	StorageTypeGCS         StorageType = "gcs"
+	StorageTypeAzure       StorageType = "azure"
+	StorageTypeSharePoint  StorageType = "sharepoint"
 	StorageTypeGoogleDrive StorageType = "google-drive"
-	StorageTypeJira       StorageType = "jira"
+	StorageTypeJira        StorageType = "jira"
 )
 
 // StorageSource represents a configured storage source
 type StorageSource struct {
-	ID          string                 `json:"id"`          // Unique identifier for this source
-	Name        string                 `json:"name"`        // Human-readable name
-	Type        StorageType            `json:"type"`        // Storage type (local, s3, gcs, azure)
-	Enabled     bool                   `json:"enabled"`     // Whether this source is active
-	Path        string                 `json:"path"`        // Base path (local dir, S3 prefix, etc.)
-	LocalCacheDir string               `json:"local_cache_dir"` // Local directory for remote filesystem mirrors
-	Credentials map[string]interface{} `json:"credentials"` // Storage-specific credentials
-	Filters     SourceFilters          `json:"filters"`     // File filtering options
+	ID            string                 `json:"id"`              // Unique identifier for this source
+	Name          string                 `json:"name"`            // Human-readable name
+	Type          StorageType            `json:"type"`            // Storage type (local, s3, gcs, azure)
+	Enabled       bool                   `json:"enabled"`         // Whether this source is active
+	Path          string                 `json:"path"`            // Base path (local dir, S3 prefix, etc.)
+	LocalCacheDir string                 `json:"local_cache_dir"` // Local directory for remote filesystem mirrors
+	Credentials   map[string]interface{} `json:"credentials"`     // Storage-specific credentials
+	Filters       SourceFilters          `json:"filters"`         // File filtering options
 }
 
 // SourceFilters defines filtering options for a storage source
@@ -71,30 +71,30 @@ type WorkerConfig struct {
 
 // EmbeddingConfig holds embedding model configuration
 type EmbeddingConfig struct {
-	Model       FastEmbedModel       `json:"model"`        // FastEmbed model to use
-	CacheDir    string               `json:"cache_dir"`    // FastEmbed model cache directory
-	Dimension   int                  `json:"dimension"`    // Embedding dimension (auto-detected)
-	ModelInfo   EmbeddingModelInfo   `json:"model_info"`   // Detailed model information
-	Performance EmbeddingPerformance `json:"performance"`  // Performance settings
+	Model       FastEmbedModel       `json:"model"`       // FastEmbed model to use
+	CacheDir    string               `json:"cache_dir"`   // FastEmbed model cache directory
+	Dimension   int                  `json:"dimension"`   // Embedding dimension (auto-detected)
+	ModelInfo   EmbeddingModelInfo   `json:"model_info"`  // Detailed model information
+	Performance EmbeddingPerformance `json:"performance"` // Performance settings
 }
 
 // EmbeddingModelInfo provides detailed information about the embedding model
 type EmbeddingModelInfo struct {
-	Name        string  `json:"name"`         // Human-readable model name
-	Description string  `json:"description"`  // Model description
-	MaxTokens   int     `json:"max_tokens"`   // Maximum input tokens
-	FileSize    string  `json:"file_size"`    // Approximate model file size
-	Speed       string  `json:"speed"`        // Relative speed (fast/medium/slow)
-	Quality     string  `json:"quality"`      // Relative quality (high/medium/low)
-	Language    string  `json:"language"`     // Primary language support
+	Name        string `json:"name"`        // Human-readable model name
+	Description string `json:"description"` // Model description
+	MaxTokens   int    `json:"max_tokens"`  // Maximum input tokens
+	FileSize    string `json:"file_size"`   // Approximate model file size
+	Speed       string `json:"speed"`       // Relative speed (fast/medium/slow)
+	Quality     string `json:"quality"`     // Relative quality (high/medium/low)
+	Language    string `json:"language"`    // Primary language support
 }
 
 // EmbeddingPerformance holds performance-related settings
 type EmbeddingPerformance struct {
-	BatchSize      int  `json:"batch_size"`       // Number of texts to process in a batch
-	MaxConcurrency int  `json:"max_concurrency"`  // Maximum concurrent embedding requests
-	CacheResults   bool `json:"cache_results"`    // Whether to cache embedding results
-	EnableGPU      bool `json:"enable_gpu"`       // Enable GPU acceleration if available
+	BatchSize      int  `json:"batch_size"`      // Number of texts to process in a batch
+	MaxConcurrency int  `json:"max_concurrency"` // Maximum concurrent embedding requests
+	CacheResults   bool `json:"cache_results"`   // Whether to cache embedding results
+	EnableGPU      bool `json:"enable_gpu"`      // Enable GPU acceleration if available
 }
 
 // DatabaseConfig holds database configuration

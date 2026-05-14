@@ -31,19 +31,19 @@ func NewModelContextProtocol(databases map[string]*database.DB, searchEngine *se
 // Start starts the MCP server
 func (mcp *ModelContextProtocol) Start() error {
 	mux := http.NewServeMux()
-	
+
 	// Register MCP endpoints
 	mux.HandleFunc("/mcp", mcp.handleMCP)
 	mux.HandleFunc("/mcp/search", mcp.handleUnifiedSearch)
 	mux.HandleFunc("/mcp/documents/", mcp.handleDocuments)
 	mux.HandleFunc("/mcp/resources", mcp.handleResources)
-	
+
 	// Create server
 	mcp.server = &http.Server{
 		Addr:    ":8081",
 		Handler: mux,
 	}
-	
+
 	// Start server in a goroutine
 	mcp.wg.Add(1)
 	go func() {
@@ -53,7 +53,7 @@ func (mcp *ModelContextProtocol) Start() error {
 			fmt.Printf("MCP server error: %v\n", err)
 		}
 	}()
-	
+
 	return nil
 }
 
@@ -62,12 +62,12 @@ func (mcp *ModelContextProtocol) Stop() error {
 	if mcp.server == nil {
 		return nil
 	}
-	
+
 	// Shutdown server
 	if err := mcp.server.Close(); err != nil {
 		return err
 	}
-	
+
 	// Wait for goroutines to finish
 	mcp.wg.Wait()
 	return nil
@@ -76,7 +76,7 @@ func (mcp *ModelContextProtocol) Stop() error {
 // handleMCP handles the main MCP endpoint
 func (mcp *ModelContextProtocol) handleMCP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	response := map[string]interface{}{
 		"protocol": "mcp",
 		"version":  "1.0.0",
@@ -85,7 +85,7 @@ func (mcp *ModelContextProtocol) handleMCP(w http.ResponseWriter, r *http.Reques
 			"resources",
 		},
 	}
-	
+
 	_ = json.NewEncoder(w).Encode(response)
 }
 
@@ -96,16 +96,16 @@ func (mcp *ModelContextProtocol) handleSearch(w http.ResponseWriter, r *http.Req
 		http.Error(w, "Missing query parameter 'q'", http.StatusBadRequest)
 		return
 	}
-	
+
 	limit := 10
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
 			limit = parsedLimit
 		}
 	}
-	
+
 	var results []map[string]interface{}
-	
+
 	// Search across all databases
 	for dir, db := range mcp.databases {
 		chunks, err := db.SearchChunks(query, limit)
@@ -113,7 +113,7 @@ func (mcp *ModelContextProtocol) handleSearch(w http.ResponseWriter, r *http.Req
 			fmt.Printf("Error searching in %s: %v\n", dir, err)
 			continue
 		}
-		
+
 		// Convert chunks to results
 		for _, chunk := range chunks {
 			results = append(results, map[string]interface{}{
@@ -123,7 +123,7 @@ func (mcp *ModelContextProtocol) handleSearch(w http.ResponseWriter, r *http.Req
 			})
 		}
 	}
-	
+
 	// Return results
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -135,7 +135,7 @@ func (mcp *ModelContextProtocol) handleSearch(w http.ResponseWriter, r *http.Req
 // handleResources handles resource listing requests
 func (mcp *ModelContextProtocol) handleResources(w http.ResponseWriter, r *http.Request) {
 	var resources []map[string]interface{}
-	
+
 	// List resources from all databases
 	for dir := range mcp.databases {
 		resources = append(resources, map[string]interface{}{
@@ -144,7 +144,7 @@ func (mcp *ModelContextProtocol) handleResources(w http.ResponseWriter, r *http.
 			"path": dir,
 		})
 	}
-	
+
 	// Return resources
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -155,7 +155,7 @@ func (mcp *ModelContextProtocol) handleResources(w http.ResponseWriter, r *http.
 // Search performs a search across all databases
 func (mcp *ModelContextProtocol) Search(ctx context.Context, query string, limit int) ([]SearchResult, error) {
 	var results []SearchResult
-	
+
 	// Search across all databases
 	for dir, db := range mcp.databases {
 		chunks, err := db.SearchChunks(query, limit)
@@ -163,7 +163,7 @@ func (mcp *ModelContextProtocol) Search(ctx context.Context, query string, limit
 			fmt.Printf("Error searching in %s: %v\n", dir, err)
 			continue
 		}
-		
+
 		// Convert chunks to results
 		for _, chunk := range chunks {
 			results = append(results, SearchResult{
@@ -173,7 +173,7 @@ func (mcp *ModelContextProtocol) Search(ctx context.Context, query string, limit
 			})
 		}
 	}
-	
+
 	return results, nil
 }
 

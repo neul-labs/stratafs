@@ -17,7 +17,7 @@ type Engine struct {
 	databases     map[string]*database.DB
 	vectorIndexes map[string]*VectorIndex // Per-directory vector indexes
 	embedder      *embeddings.Embedder
-	ftsAvailable  map[string]bool         // Track FTS5 availability per database
+	ftsAvailable  map[string]bool // Track FTS5 availability per database
 }
 
 // NewEngine creates a new search engine with per-directory vector indexes in shared databases
@@ -156,11 +156,11 @@ func (e *Engine) searchFullText(req *SearchRequest) ([]SearchResult, int64, erro
 
 		for _, chunk := range chunks {
 			result := SearchResult{
-				ID:       chunk.ID,
-				FileID:   chunk.FileID,
-				ChunkID:  &chunk.ID,
-				Content:  chunk.Content,
-				Score:    1.0, // Will be calculated based on FTS score
+				ID:      chunk.ID,
+				FileID:  chunk.FileID,
+				ChunkID: &chunk.ID,
+				Content: chunk.Content,
+				Score:   1.0, // Will be calculated based on FTS score
 			}
 
 			// Get file metadata
@@ -648,13 +648,13 @@ func (e *Engine) searchHybridInDatabase(db *database.DB, req *SearchRequest, que
 
 	// Execute unified hybrid query
 	rows, err := db.GetConn().Query(query,
-		weights.FullText,  // fts_weight
-		req.Query,         // FTS query
-		req.Limit*2,       // FTS limit
-		weights.Vector,    // vector_weight
-		queryBytes,        // vector query
-		req.Limit*2,       // vector k parameter
-		req.Limit,         // final limit
+		weights.FullText, // fts_weight
+		req.Query,        // FTS query
+		req.Limit*2,      // FTS limit
+		weights.Vector,   // vector_weight
+		queryBytes,       // vector query
+		req.Limit*2,      // vector k parameter
+		req.Limit,        // final limit
 	)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to execute hybrid query: %w", err)

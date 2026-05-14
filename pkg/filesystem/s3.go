@@ -92,9 +92,9 @@ func (s3fs *S3FileSystem) Open(name string) (File, error) {
 	}
 
 	return &s3File{
-		name:   name,
-		reader: result.Body,
-		size:   *result.ContentLength,
+		name:    name,
+		reader:  result.Body,
+		size:    *result.ContentLength,
 		modTime: *result.LastModified,
 	}, nil
 }

@@ -110,14 +110,14 @@ func (m *Monitor) initializeDirectory(dir string) error {
 	if err := m.filesystem.MkdirAll(agentPath, 0755); err != nil {
 		return fmt.Errorf("failed to create agent directory: %w", err)
 	}
-	
+
 	// Initialize database
 	dbPath := m.config.GetDBPath(dir)
 	db, err := database.NewDB(dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
-	
+
 	m.databases[dir] = db
 	return nil
 }
@@ -176,7 +176,7 @@ func (m *Monitor) Start() error {
 func (m *Monitor) runCompactionService() {
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -190,11 +190,11 @@ func (m *Monitor) runCompactionService() {
 // performCompaction removes soft-deleted entries from databases
 func (m *Monitor) performCompaction() {
 	p := pool.New().WithMaxGoroutines(10)
-	
+
 	for dir, db := range m.databases {
 		dir := dir
 		db := db
-		
+
 		p.Go(func() {
 			fmt.Printf("Running compaction for directory: %s\n", dir)
 			if err := db.Compact(); err != nil {
@@ -202,7 +202,7 @@ func (m *Monitor) performCompaction() {
 			}
 		})
 	}
-	
+
 	p.Wait()
 }
 

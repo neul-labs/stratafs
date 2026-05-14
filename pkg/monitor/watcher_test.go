@@ -262,8 +262,8 @@ func TestSupportedFileTypes(t *testing.T) {
 	defer watcher.Stop()
 
 	testCases := []struct {
-		filename  string
-		content   string
+		filename    string
+		content     string
 		shouldIndex bool
 	}{
 		{"test.go", "package main", true},

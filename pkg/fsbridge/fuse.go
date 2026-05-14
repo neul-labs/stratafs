@@ -32,13 +32,13 @@ type MountOptions struct {
 
 // FuseMount represents a mounted StrataFS filesystem.
 type FuseMount struct {
-	db       *database.DB
-	source   config.StorageSource
-	opts     MountOptions
-	conn     *fuse.Conn
-	mounted  bool
-	mu       sync.RWMutex
-	stopCh   chan struct{}
+	db      *database.DB
+	source  config.StorageSource
+	opts    MountOptions
+	conn    *fuse.Conn
+	mounted bool
+	mu      sync.RWMutex
+	stopCh  chan struct{}
 }
 
 // NewFuseMount creates a new FUSE mount for the given source.

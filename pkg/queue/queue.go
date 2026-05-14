@@ -15,9 +15,9 @@ import (
 type JobType string
 
 const (
-	JobTypeParse  JobType = "parse"
-	JobTypeEmbed  JobType = "embed"
-	JobTypeIndex  JobType = "index"
+	JobTypeParse JobType = "parse"
+	JobTypeEmbed JobType = "embed"
+	JobTypeIndex JobType = "index"
 )
 
 // JobStatus represents the status of a job
@@ -32,20 +32,20 @@ const (
 
 // Job represents a job in the queue
 type Job struct {
-	ID          int64     `json:"id"`
-	Type        JobType   `json:"type"`
-	Status      JobStatus `json:"status"`
-	Priority    int       `json:"priority"`
-	FilePath    string    `json:"file_path"`
-	DirectoryID string    `json:"directory_id"`
-	Payload     string    `json:"payload"` // JSON payload for job-specific data
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          int64      `json:"id"`
+	Type        JobType    `json:"type"`
+	Status      JobStatus  `json:"status"`
+	Priority    int        `json:"priority"`
+	FilePath    string     `json:"file_path"`
+	DirectoryID string     `json:"directory_id"`
+	Payload     string     `json:"payload"` // JSON payload for job-specific data
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 	StartedAt   *time.Time `json:"started_at,omitempty"`
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
-	Error       string    `json:"error,omitempty"`
-	Retries     int       `json:"retries"`
-	MaxRetries  int       `json:"max_retries"`
+	Error       string     `json:"error,omitempty"`
+	Retries     int        `json:"retries"`
+	MaxRetries  int        `json:"max_retries"`
 }
 
 // Queue manages job processing

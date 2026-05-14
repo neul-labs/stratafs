@@ -111,10 +111,10 @@ func getFileTypeByExtension(ext string) *FileTypeInfo {
 		".svg":  {FileTypeXML, "image/svg+xml", ext, true, true, "SVG"},
 
 		// Data files
-		".json":  {FileTypeJSON, "application/json", ext, true, true, "JSON"},
-		".yaml":  {FileTypeYAML, "application/x-yaml", ext, true, true, "YAML"},
-		".yml":   {FileTypeYAML, "application/x-yaml", ext, true, true, "YAML"},
-		".toml":  {FileTypeText, "application/toml", ext, true, true, "TOML"},
+		".json": {FileTypeJSON, "application/json", ext, true, true, "JSON"},
+		".yaml": {FileTypeYAML, "application/x-yaml", ext, true, true, "YAML"},
+		".yml":  {FileTypeYAML, "application/x-yaml", ext, true, true, "YAML"},
+		".toml": {FileTypeText, "application/toml", ext, true, true, "TOML"},
 
 		// Documents
 		".pdf":  {FileTypePDF, "application/pdf", ext, false, true, "PDF document"},
@@ -122,10 +122,10 @@ func getFileTypeByExtension(ext string) *FileTypeInfo {
 		".doc":  {FileTypeDocx, "application/msword", ext, false, false, "Word document (old format)"},
 
 		// Binary files we should skip
-		".exe":  {FileTypeBinary, "application/octet-stream", ext, false, false, "Executable"},
-		".bin":  {FileTypeBinary, "application/octet-stream", ext, false, false, "Binary file"},
-		".dll":  {FileTypeBinary, "application/octet-stream", ext, false, false, "Dynamic library"},
-		".so":   {FileTypeBinary, "application/octet-stream", ext, false, false, "Shared library"},
+		".exe":   {FileTypeBinary, "application/octet-stream", ext, false, false, "Executable"},
+		".bin":   {FileTypeBinary, "application/octet-stream", ext, false, false, "Binary file"},
+		".dll":   {FileTypeBinary, "application/octet-stream", ext, false, false, "Dynamic library"},
+		".so":    {FileTypeBinary, "application/octet-stream", ext, false, false, "Shared library"},
 		".dylib": {FileTypeBinary, "application/octet-stream", ext, false, false, "Dynamic library"},
 
 		// Images
@@ -138,11 +138,11 @@ func getFileTypeByExtension(ext string) *FileTypeInfo {
 		".ico":  {FileTypeImage, "image/x-icon", ext, false, false, "Icon"},
 
 		// Video
-		".mp4":  {FileTypeVideo, "video/mp4", ext, false, false, "MP4 video"},
-		".avi":  {FileTypeVideo, "video/x-msvideo", ext, false, false, "AVI video"},
-		".mov":  {FileTypeVideo, "video/quicktime", ext, false, false, "QuickTime video"},
-		".wmv":  {FileTypeVideo, "video/x-ms-wmv", ext, false, false, "WMV video"},
-		".mkv":  {FileTypeVideo, "video/x-matroska", ext, false, false, "Matroska video"},
+		".mp4": {FileTypeVideo, "video/mp4", ext, false, false, "MP4 video"},
+		".avi": {FileTypeVideo, "video/x-msvideo", ext, false, false, "AVI video"},
+		".mov": {FileTypeVideo, "video/quicktime", ext, false, false, "QuickTime video"},
+		".wmv": {FileTypeVideo, "video/x-ms-wmv", ext, false, false, "WMV video"},
+		".mkv": {FileTypeVideo, "video/x-matroska", ext, false, false, "Matroska video"},
 
 		// Audio
 		".mp3":  {FileTypeAudio, "audio/mpeg", ext, false, false, "MP3 audio"},
@@ -151,13 +151,13 @@ func getFileTypeByExtension(ext string) *FileTypeInfo {
 		".ogg":  {FileTypeAudio, "audio/ogg", ext, false, false, "OGG audio"},
 
 		// Archives
-		".zip":  {FileTypeArchive, "application/zip", ext, false, false, "ZIP archive"},
-		".tar":  {FileTypeArchive, "application/x-tar", ext, false, false, "TAR archive"},
-		".gz":   {FileTypeArchive, "application/gzip", ext, false, false, "Gzip archive"},
-		".bz2":  {FileTypeArchive, "application/x-bzip2", ext, false, false, "Bzip2 archive"},
-		".xz":   {FileTypeArchive, "application/x-xz", ext, false, false, "XZ archive"},
-		".7z":   {FileTypeArchive, "application/x-7z-compressed", ext, false, false, "7-Zip archive"},
-		".rar":  {FileTypeArchive, "application/vnd.rar", ext, false, false, "RAR archive"},
+		".zip": {FileTypeArchive, "application/zip", ext, false, false, "ZIP archive"},
+		".tar": {FileTypeArchive, "application/x-tar", ext, false, false, "TAR archive"},
+		".gz":  {FileTypeArchive, "application/gzip", ext, false, false, "Gzip archive"},
+		".bz2": {FileTypeArchive, "application/x-bzip2", ext, false, false, "Bzip2 archive"},
+		".xz":  {FileTypeArchive, "application/x-xz", ext, false, false, "XZ archive"},
+		".7z":  {FileTypeArchive, "application/x-7z-compressed", ext, false, false, "7-Zip archive"},
+		".rar": {FileTypeArchive, "application/vnd.rar", ext, false, false, "RAR archive"},
 	}
 
 	return extensionMap[ext]
@@ -214,7 +214,7 @@ func (info *FileTypeInfo) ShouldIndex() bool {
 func (info *FileTypeInfo) IsSupported() bool {
 	switch info.Type {
 	case FileTypeText, FileTypeCode, FileTypeMarkdown, FileTypeHTML,
-		 FileTypeJSON, FileTypeXML, FileTypeYAML, FileTypePDF:
+		FileTypeJSON, FileTypeXML, FileTypeYAML, FileTypePDF:
 		return true
 	default:
 		return false

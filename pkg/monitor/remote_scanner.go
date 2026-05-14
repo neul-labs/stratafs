@@ -260,7 +260,7 @@ func (rs *RemoteScanner) queueFileForProcessing(scanner *sourceScanner, remotePa
 
 	// Create payload with metadata including cleanup flag
 	payload := map[string]interface{}{
-		"cleanup_after_processing": true,      // Flag to delete after processing
+		"cleanup_after_processing": true, // Flag to delete after processing
 		"original_remote_path":     remotePath,
 		"source_name":              scanner.source.Name,
 		"source_type":              string(scanner.source.Type),
@@ -271,7 +271,7 @@ func (rs *RemoteScanner) queueFileForProcessing(scanner *sourceScanner, remotePa
 	_, err = rs.queue.AddJob(queue.JobTypeParse, cachePath, scanner.source.ID, 3, string(payloadJSON))
 	if err != nil {
 		// Clean up cache file if queueing fails
-		os.Remove(cachePath)
+		_ = os.Remove(cachePath)
 		return fmt.Errorf("failed to add job to queue: %w", err)
 	}
 

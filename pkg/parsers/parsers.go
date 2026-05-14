@@ -47,7 +47,6 @@ func (tp *TextParser) Supports(extension string) bool {
 	return false
 }
 
-
 // HTMLParser handles HTML document parsing
 type HTMLParser struct{}
 

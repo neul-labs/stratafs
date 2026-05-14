@@ -16,8 +16,8 @@ type VectorIndex struct {
 
 // VectorSearchResult represents a vector similarity result
 type VectorSearchResult struct {
-	ChunkID int64   `json:"chunk_id"`
-	Score   float64 `json:"score"`
+	ChunkID int64     `json:"chunk_id"`
+	Score   float64   `json:"score"`
 	Vector  []float32 `json:"vector,omitempty"`
 }
 

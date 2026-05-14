@@ -16,8 +16,8 @@ func TestParserRegistry(t *testing.T) {
 
 	// Test specific parsers
 	testCases := []struct {
-		extension string
-		filename  string
+		extension     string
+		filename      string
 		shouldSupport bool
 	}{
 		{".go", "main.go", true},
@@ -118,8 +118,8 @@ func TestCodeParserLanguages(t *testing.T) {
 
 func TestParserCreation(t *testing.T) {
 	testCases := []struct {
-		filename string
-		content  string
+		filename    string
+		content     string
 		expectError bool
 	}{
 		{"test.go", "package main\n\nfunc main() {\n\tprintln(\"Hello\")\n}", false},
