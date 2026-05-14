@@ -1,47 +1,153 @@
-# Binaries
+# =========================================================
+# Go
+# =========================================================
 /bin/
 /build/
 /stratafs
-
-# Build artifacts
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
+*.test
+*.out
+coverage.txt
+coverage.html
+profile.out
+go.work
+go.work.sum
 
-# IDE files
+# Accidentally-committed module cache
+.cachegomod/
+
+# =========================================================
+# Python (packages/python/, research/benchmarks/, docs build)
+# =========================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg
+*.egg-info/
+.eggs/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# venvs
+.venv/
+venv/
+env/
+ENV/
+
+# Test / type-check caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.cache/
+
+# Distribution
+dist/
+*.whl
+*.tar.gz
+
+# =========================================================
+# Node / Wails frontend (desktop/stratafs-ui/frontend/)
+# =========================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.yarn/
+.pnpm-store/
+package-lock.json.bak
+
+# Vite / Vue build output
+frontend/dist/
+desktop/*/frontend/dist/
+desktop/*/build/bin/
+
+# =========================================================
+# MkDocs
+# =========================================================
+/documentation/site/
+
+# =========================================================
+# ONNX Runtime / models (huge, fetched on demand)
+# =========================================================
+build/onnx/
+*.onnx
+fastembed_cache/
+
+# Local LLM model files
+*.gguf
+*.bin.weights
+
+# =========================================================
+# Docker
+# =========================================================
+docker-compose.override.yml
+.docker/
+
+# =========================================================
+# Logs
+# =========================================================
+*.log
+logs/
+
+# =========================================================
+# StrataFS runtime state (per-user data)
+# =========================================================
+.stratafs/
+
+# =========================================================
+# Environment / secrets
+# =========================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+service-account*.json
+
+# =========================================================
+# Editors / IDEs
+# =========================================================
 .vscode/
 .idea/
 *.swp
 *.swo
+*.swn
 *~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
 
-# Environment files
-.env
+# =========================================================
+# OS
+# =========================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+Thumbs.db:encryptable
+Desktop.ini
+$RECYCLE.BIN/
 
-# StrataFS directories
-.stratafs/
-
-# Docker
-docker-compose.override.yml
-
-# Logs
-*.log
-
-# Test coverage
-coverage.txt
-profile.out
-
-# Go workspace file
-go.work
-
-# Temporary folders
+# =========================================================
+# Temporary
+# =========================================================
 tmp/
 temp/
-
-# macOS
-.DS_Store
-
-# MkDocs build output
-/documentation/site/
+*.bak
+*.orig
+*.rej
