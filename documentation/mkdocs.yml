@@ -1,0 +1,135 @@
+site_name: StrataFS
+site_description: A semantic filesystem that transforms passive file storage into an intelligent, searchable knowledge base.
+# site_url: TODO(domain) — set this to the published docs URL before building social cards.
+repo_url: https://github.com/neul-labs/stratafs
+repo_name: neul-labs/stratafs
+edit_uri: edit/main/documentation/docs/
+copyright: Copyright &copy; Neul Labs
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.action.edit
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/neul-labs/stratafs
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/stratafs/
+    - icon: fontawesome/brands/npm
+      link: https://www.npmjs.com/package/stratafs
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: false
+      fallback_to_build_date: true
+      strict: false
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+      permalink_title: Link to this section
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - Concepts: getting-started/concepts.md
+  - User Guide:
+      - Configuration: user-guide/configuration.md
+      - Storage Backends: user-guide/storage-backends.md
+      - Search: user-guide/search.md
+      - File Types: user-guide/file-types.md
+      - CLI Reference: user-guide/cli.md
+  - Desktop App:
+      - Overview: desktop/overview.md
+      - Platform Notes: desktop/platform-notes.md
+  - AI Integration:
+      - Model Context Protocol: ai-integration/mcp.md
+      - REST API: ai-integration/rest-api.md
+  - Deployment:
+      - Docker: deployment/docker.md
+      - systemd: deployment/systemd.md
+      - launchd: deployment/launchd.md
+      - Kubernetes: deployment/kubernetes.md
+      - Production Checklist: deployment/production-checklist.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Database: architecture/database.md
+      - Performance: architecture/performance.md
+  - Contributing:
+      - Development: contributing/development.md
+      - Building: contributing/building.md
+      - Roadmap: contributing/roadmap.md

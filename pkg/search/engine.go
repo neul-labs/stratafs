@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"agentfs/pkg/database"
-	"agentfs/pkg/embeddings"
+	"github.com/neul-labs/stratafs/pkg/database"
+	"github.com/neul-labs/stratafs/pkg/embeddings"
 )
 
 // Engine provides hybrid search capabilities

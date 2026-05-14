@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"sync"
 
-	"agentfs/pkg/database"
-	"agentfs/pkg/search"
+	"github.com/neul-labs/stratafs/pkg/database"
+	"github.com/neul-labs/stratafs/pkg/search"
 )
 
 // ModelContextProtocol represents the MCP server

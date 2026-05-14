@@ -1,6 +1,6 @@
-# Makefile for AgentFS research paper
+# Makefile for StrataFS research paper
 
-PAPER = agentfs-paper
+PAPER = stratafs-paper
 LATEX = pdflatex
 BIBTEX = bibtex
 

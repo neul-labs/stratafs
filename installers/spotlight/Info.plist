@@ -28,13 +28,13 @@
         </dict>
     </array>
     <key>CFBundleExecutable</key>
-    <string>AgentFSImporter</string>
+    <string>StrataFSImporter</string>
     <key>CFBundleIdentifier</key>
-    <string>org.agentfs.spotlight-importer</string>
+    <string>org.stratafs.spotlight-importer</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>AgentFS Spotlight Importer</string>
+    <string>StrataFS Spotlight Importer</string>
     <key>CFBundlePackageType</key>
     <string>BNDL</string>
     <key>CFBundleShortVersionString</key>

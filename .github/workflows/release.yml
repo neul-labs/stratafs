@@ -41,15 +41,15 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libwebkit2gtk-4.0-dev libgtk-3-dev pkg-config
 
-    - name: Build agentfs-ui
-      working-directory: desktop/agentfs-ui
+    - name: Build stratafs-ui
+      working-directory: desktop/stratafs-ui
       run: wails build -platform linux/amd64
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: agentfs-ui-linux-amd64
-        path: desktop/agentfs-ui/build/bin/agentfs-ui
+        name: stratafs-ui-linux-amd64
+        path: desktop/stratafs-ui/build/bin/stratafs-ui
 
   build-binaries:
     name: Build Binaries
@@ -157,9 +157,9 @@ jobs:
           export CGO_LDFLAGS="-L$PWD/$ONNX_DIR/lib -lonnxruntime"
         fi
 
-        BINARY_NAME="agentfs"
+        BINARY_NAME="stratafs"
         if [ "${{ matrix.os }}" = "windows" ]; then
-          BINARY_NAME="agentfs.exe"
+          BINARY_NAME="stratafs.exe"
         fi
 
         BUILD_DIR="build/${{ matrix.os }}-${{ matrix.arch }}"
@@ -169,7 +169,7 @@ jobs:
           -tags "fts5" \
           -ldflags "-s -w -X main.version=${VERSION} -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           -o "$BUILD_DIR/$BINARY_NAME" \
-          ./cmd/agentfs
+          ./cmd/stratafs
 
         # Copy ONNX Runtime libraries
         if [ -d "$ONNX_DIR/lib" ]; then
@@ -178,7 +178,7 @@ jobs:
 
         # Create README
         cat > "$BUILD_DIR/README.txt" << EOF
-        AgentFS ${VERSION}
+        StrataFS ${VERSION}
         ================
 
         Platform: ${{ matrix.os }}/${{ matrix.arch }}
@@ -186,8 +186,8 @@ jobs:
 
         Installation:
         1. Extract this archive
-        2. Copy agentfs to a directory in your PATH
-        3. Run 'agentfs config init' to initialize
+        2. Copy stratafs to a directory in your PATH
+        3. Run 'stratafs config init' to initialize
 
         For more information: https://github.com/${{ github.repository }}
         EOF
@@ -195,7 +195,7 @@ jobs:
     - name: Create archive
       run: |
         BUILD_DIR="build/${{ matrix.os }}-${{ matrix.arch }}"
-        ARCHIVE_NAME="agentfs-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}"
+        ARCHIVE_NAME="stratafs-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}"
 
         if [ "${{ matrix.os }}" = "windows" ]; then
           cd build && zip -r "${ARCHIVE_NAME}.zip" "${{ matrix.os }}-${{ matrix.arch }}"
@@ -206,8 +206,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: agentfs-${{ matrix.os }}-${{ matrix.arch }}
-        path: build/agentfs-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}.*
+        name: stratafs-${{ matrix.os }}-${{ matrix.arch }}
+        path: build/stratafs-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}.*
 
   build-docker:
     name: Build Docker Image
@@ -281,7 +281,7 @@ jobs:
         # Get the previous tag
         PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
-        echo "# AgentFS $VERSION" > release_notes.md
+        echo "# StrataFS $VERSION" > release_notes.md
         echo "" >> release_notes.md
 
         if [ -n "$PREV_TAG" ]; then
@@ -341,12 +341,12 @@ jobs:
       run: pip install build
 
     - name: Build Python package
-      run: python -m build packages/python/agentfs
+      run: python -m build packages/python/stratafs
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        packages-dir: packages/python/agentfs/dist
+        packages-dir: packages/python/stratafs/dist
 
   publish-npm:
     name: Publish to npm
@@ -366,7 +366,7 @@ jobs:
         registry-url: 'https://registry.npmjs.org'
 
     - name: Install dependencies
-      run: cd packages/npm/agentfs && npm ci
+      run: cd packages/npm/stratafs && npm ci
 
     - name: Publish to npm
-      run: cd packages/npm/agentfs && npm publish
+      run: cd packages/npm/stratafs && npm publish

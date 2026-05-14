@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "agentfs-benchmarks"
+name = "stratafs-benchmarks"
 version = "0.1.0"
-description = "Benchmark suite for AgentFS research paper"
+description = "Benchmark suite for StrataFS research paper"
 authors = ["Dipankar Sarkar"]
 readme = "README.md"
 

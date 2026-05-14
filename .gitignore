@@ -1,7 +1,7 @@
 # Binaries
 /bin/
 /build/
-/agentfs
+/stratafs
 
 # Build artifacts
 *.exe
@@ -20,8 +20,8 @@
 # Environment files
 .env
 
-# AgentFS directories
-.agentfs/
+# StrataFS directories
+.stratafs/
 
 # Docker
 docker-compose.override.yml
@@ -42,3 +42,6 @@ temp/
 
 # macOS
 .DS_Store
+
+# MkDocs build output
+/documentation/site/

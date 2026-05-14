@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"agentfs/pkg/config"
-	"agentfs/pkg/database"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/database"
 )
 
 type stubEmbedder struct{}
@@ -22,9 +22,9 @@ func (stubEmbedder) Embed(text string) ([]float32, error) {
 
 func TestProcessParseJobCreatesChunks(t *testing.T) {
 	tempDir := t.TempDir()
-	cfg := &config.Config{AgentDir: ".agentfs"}
+	cfg := &config.Config{AgentDir: ".stratafs"}
 
-	dbPath := filepath.Join(tempDir, "agentfs.db")
+	dbPath := filepath.Join(tempDir, "stratafs.db")
 	db, err := database.NewDB(dbPath)
 	if err != nil {
 		t.Fatalf("failed to create database: %v", err)
@@ -35,10 +35,10 @@ func TestProcessParseJobCreatesChunks(t *testing.T) {
 		tempDir: db,
 	}
 
-	processor := NewAgentFSProcessor(cfg, databases, stubEmbedder{}, nil, nil)
+	processor := NewStrataFSProcessor(cfg, databases, stubEmbedder{}, nil, nil)
 
 	filePath := filepath.Join(tempDir, "sample.txt")
-	content := "hello agentfs!"
+	content := "hello stratafs!"
 	if err := os.WriteFile(filePath, []byte(content), 0o644); err != nil {
 		t.Fatalf("failed to write file: %v", err)
 	}

@@ -16,20 +16,20 @@ import (
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
-const serviceName = "AgentFS"
-const serviceDesc = "AgentFS Semantic Filesystem Service"
+const serviceName = "StrataFS"
+const serviceDesc = "StrataFS Semantic Filesystem Service"
 
 var elog debug.Log
 
-type agentFSService struct{}
+type strataFSService struct{}
 
-func (m *agentFSService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+func (m *strataFSService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 
 	changes <- svc.Status{State: svc.StartPending}
 
-	// Start AgentFS daemon
-	go runAgentFS()
+	// Start StrataFS daemon
+	go runStrataFS()
 
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 
@@ -50,7 +50,7 @@ func (m *agentFSService) Execute(args []string, r <-chan svc.ChangeRequest, chan
 	}
 }
 
-func runAgentFS() {
+func runStrataFS() {
 	// Get executable directory
 	exePath, err := os.Executable()
 	if err != nil {
@@ -59,11 +59,11 @@ func runAgentFS() {
 	}
 
 	exeDir := filepath.Dir(exePath)
-	agentfsPath := filepath.Join(exeDir, "agentfs.exe")
+	stratafsPath := filepath.Join(exeDir, "stratafs.exe")
 
-	// Run main agentfs executable
+	// Run main stratafs executable
 	// In production, this would exec the actual daemon
-	elog.Info(1, fmt.Sprintf("Starting AgentFS from %s", agentfsPath))
+	elog.Info(1, fmt.Sprintf("Starting StrataFS from %s", stratafsPath))
 
 	// Placeholder - actual implementation would run the daemon
 	for {
@@ -88,7 +88,7 @@ func runService(name string, isDebug bool) {
 	if isDebug {
 		run = debug.Run
 	}
-	err = run(name, &agentFSService{})
+	err = run(name, &strataFSService{})
 	if err != nil {
 		elog.Error(1, fmt.Sprintf("%s service failed: %v", name, err))
 		return
@@ -226,7 +226,7 @@ func main() {
 	}
 
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: agentfs-service <command>")
+		fmt.Println("Usage: stratafs-service <command>")
 		fmt.Println("Commands: install, remove, start, stop, debug")
 		return
 	}

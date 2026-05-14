@@ -121,7 +121,7 @@ main() {
     echo "      CGO_ENABLED=1 \\"
     echo "      CGO_CFLAGS=\"-I$(pwd)/build/onnx/${TARGET_OS}-${TARGET_ARCH}/include\" \\"
     echo "      CGO_LDFLAGS=\"-L$(pwd)/build/onnx/${TARGET_OS}-${TARGET_ARCH}/lib -lonnxruntime\" \\"
-    echo "      go build -tags fts5 ./cmd/agentfs"
+    echo "      go build -tags fts5 ./cmd/stratafs"
 }
 
 main "$@"

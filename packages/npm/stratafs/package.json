@@ -1,0 +1,31 @@
+{
+  "name": "stratafs",
+  "version": "0.2.0",
+  "description": "StrataFS - A semantic filesystem for AI agents",
+  "main": "index.js",
+  "bin": {
+    "stratafs": "bin/stratafs.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js",
+    "build": "echo 'No build step required'"
+  },
+  "keywords": [
+    "stratafs",
+    "filesystem",
+    "semantic",
+    "search",
+    "ai"
+  ],
+  "author": "StrataFS Contributors",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "index.js",
+    "install.js",
+    "bin/",
+    "README.md"
+  ]
+}

@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.stratafs.SearchProvider
+Exec=/usr/bin/stratafs search-provider

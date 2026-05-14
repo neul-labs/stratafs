@@ -18,11 +18,11 @@ func main() {
 
 func onReady() {
 	systray.SetIcon(getIcon())
-	systray.SetTitle("AgentFS")
-	systray.SetTooltip("AgentFS - Semantic Filesystem")
+	systray.SetTitle("StrataFS")
+	systray.SetTooltip("StrataFS - Semantic Filesystem")
 
 	// Menu items
-	mOpen := systray.AddMenuItem("Open AgentFS", "Open the AgentFS control panel")
+	mOpen := systray.AddMenuItem("Open StrataFS", "Open the StrataFS control panel")
 	mSearch := systray.AddMenuItem("Search...", "Open search interface")
 
 	systray.AddSeparator()
@@ -33,9 +33,9 @@ func onReady() {
 	systray.AddSeparator()
 
 	// Service controls
-	mStartService := systray.AddMenuItem("Start Service", "Start the AgentFS service")
-	mStopService := systray.AddMenuItem("Stop Service", "Stop the AgentFS service")
-	mRestartService := systray.AddMenuItem("Restart Service", "Restart the AgentFS service")
+	mStartService := systray.AddMenuItem("Start Service", "Start the StrataFS service")
+	mStopService := systray.AddMenuItem("Stop Service", "Stop the StrataFS service")
+	mRestartService := systray.AddMenuItem("Restart Service", "Restart the StrataFS service")
 
 	systray.AddSeparator()
 
@@ -43,7 +43,7 @@ func onReady() {
 	mSettings := systray.AddMenuItem("Settings", "")
 	mOpenConfig := mSettings.AddSubMenuItem("Open Config", "Open configuration file")
 	mOpenLogs := mSettings.AddSubMenuItem("View Logs", "Open log directory")
-	mAutoStart := mSettings.AddSubMenuItemCheckbox("Start with Windows", "Start AgentFS when Windows starts", true)
+	mAutoStart := mSettings.AddSubMenuItemCheckbox("Start with Windows", "Start StrataFS when Windows starts", true)
 
 	systray.AddSeparator()
 
@@ -99,7 +99,7 @@ func getIcon() []byte {
 func openUI() {
 	exePath, _ := os.Executable()
 	exeDir := filepath.Dir(exePath)
-	uiPath := filepath.Join(exeDir, "agentfs-ui.exe")
+	uiPath := filepath.Join(exeDir, "stratafs-ui.exe")
 
 	if _, err := os.Stat(uiPath); err == nil {
 		exec.Command(uiPath).Start()
@@ -116,20 +116,20 @@ func openSearch() {
 func runServiceCmd(cmd string) {
 	exePath, _ := os.Executable()
 	exeDir := filepath.Dir(exePath)
-	servicePath := filepath.Join(exeDir, "agentfs-service.exe")
+	servicePath := filepath.Join(exeDir, "stratafs-service.exe")
 
 	exec.Command(servicePath, cmd).Run()
 }
 
 func openConfig() {
 	homeDir, _ := os.UserHomeDir()
-	configPath := filepath.Join(homeDir, ".agentfs", "config.json")
+	configPath := filepath.Join(homeDir, ".stratafs", "config.json")
 	exec.Command("notepad", configPath).Start()
 }
 
 func openLogs() {
 	homeDir, _ := os.UserHomeDir()
-	logsDir := filepath.Join(homeDir, ".agentfs", "logs")
+	logsDir := filepath.Join(homeDir, ".stratafs", "logs")
 	os.MkdirAll(logsDir, 0755)
 	exec.Command("explorer", logsDir).Start()
 }
@@ -139,10 +139,10 @@ func enableAutoStart() {
 
 	// Add to registry Run key
 	key := `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
-	exec.Command("reg", "add", key, "/v", "AgentFS", "/t", "REG_SZ", "/d", fmt.Sprintf(`"%s"`, exePath), "/f").Run()
+	exec.Command("reg", "add", key, "/v", "StrataFS", "/t", "REG_SZ", "/d", fmt.Sprintf(`"%s"`, exePath), "/f").Run()
 }
 
 func disableAutoStart() {
 	key := `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
-	exec.Command("reg", "delete", key, "/v", "AgentFS", "/f").Run()
+	exec.Command("reg", "delete", key, "/v", "StrataFS", "/f").Run()
 }

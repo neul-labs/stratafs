@@ -6,7 +6,7 @@ set -e
 # Configuration
 VERSION="${VERSION:-$(git describe --tags --always)}"
 BUILD_DIR="build/release"
-BINARY_NAME="agentfs"
+BINARY_NAME="stratafs"
 ONNX_VERSION="${ONNX_VERSION:-1.16.3}"
 
 # Colors for output
@@ -190,7 +190,7 @@ build_binary() {
         -tags "$build_tags" \
         -ldflags "$ldflags" \
         -o "$output_dir/$binary_name" \
-        ./cmd/agentfs; then
+        ./cmd/stratafs; then
         print_error "Failed to build for $platform/$arch"
         return 1
     fi
@@ -211,18 +211,18 @@ build_binary() {
 
     # Create README for the release
     cat > "$output_dir/README.txt" << EOF
-AgentFS $VERSION
+StrataFS $VERSION
 ================
 
-This is the AgentFS binary for $platform/$arch.
+This is the StrataFS binary for $platform/$arch.
 
 Installation:
 1. Extract this archive
-2. Copy the agentfs binary to a directory in your PATH
-3. Run 'agentfs config init' to create initial configuration
-4. Run 'agentfs --help' for usage information
+2. Copy the stratafs binary to a directory in your PATH
+3. Run 'stratafs config init' to create initial configuration
+4. Run 'stratafs --help' for usage information
 
-For more information, visit: https://github.com/yourusername/agentfs
+For more information, visit: https://github.com/neul-labs/stratafs
 
 Build Information:
 - Version: $VERSION
@@ -289,7 +289,7 @@ clean_build() {
 }
 
 main() {
-    print_info "AgentFS Release Build Script"
+    print_info "StrataFS Release Build Script"
     print_info "============================"
     print_info "Version: $VERSION"
 
@@ -345,7 +345,7 @@ case "${1:-}" in
         clean_build
         ;;
     "help"|"--help"|"-h")
-        echo "AgentFS Release Build Script"
+        echo "StrataFS Release Build Script"
         echo ""
         echo "Usage: $0 [COMMAND]"
         echo ""

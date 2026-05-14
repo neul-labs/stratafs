@@ -9,16 +9,16 @@ import (
 	"sync"
 	"time"
 
-	"agentfs/internal/utils"
-	"agentfs/pkg/api"
-	"agentfs/pkg/config"
-	"agentfs/pkg/database"
-	"agentfs/pkg/embeddings"
-	"agentfs/pkg/filesystem"
-	"agentfs/pkg/parsers"
-	"agentfs/pkg/protocol"
-	"agentfs/pkg/queue"
-	"agentfs/pkg/search"
+	"github.com/neul-labs/stratafs/internal/utils"
+	"github.com/neul-labs/stratafs/pkg/api"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/database"
+	"github.com/neul-labs/stratafs/pkg/embeddings"
+	"github.com/neul-labs/stratafs/pkg/filesystem"
+	"github.com/neul-labs/stratafs/pkg/parsers"
+	"github.com/neul-labs/stratafs/pkg/protocol"
+	"github.com/neul-labs/stratafs/pkg/queue"
+	"github.com/neul-labs/stratafs/pkg/search"
 
 	"github.com/sourcegraph/conc/pool"
 	"golang.org/x/exp/slices"
@@ -109,9 +109,9 @@ func NewMonitor(cfg *config.Config) (*Monitor, error) {
 	return m, nil
 }
 
-// initializeDirectory sets up the .agentfs directory and database for a given directory
+// initializeDirectory sets up the .stratafs directory and database for a given directory
 func (m *Monitor) initializeDirectory(dir string) error {
-	// Create .agentfs directory if it doesn't exist
+	// Create .stratafs directory if it doesn't exist
 	agentPath := m.config.GetAgentPath(dir)
 	if err := m.filesystem.MkdirAll(agentPath, 0755); err != nil {
 		return fmt.Errorf("failed to create agent directory: %w", err)

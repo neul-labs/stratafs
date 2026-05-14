@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"agentfs/pkg/config"
-	"agentfs/pkg/database"
-	"agentfs/pkg/queue"
-	"agentfs/pkg/search"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/database"
+	"github.com/neul-labs/stratafs/pkg/queue"
+	"github.com/neul-labs/stratafs/pkg/search"
 )
 
 // Server represents the HTTP API server
@@ -300,7 +300,7 @@ func (s *Server) handleSwagger(w http.ResponseWriter, r *http.Request) {
 	html := `<!DOCTYPE html>
 <html>
 <head>
-	<title>AgentFS API Documentation</title>
+	<title>StrataFS API Documentation</title>
 	<link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
 	<style>
 		html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
@@ -340,7 +340,7 @@ func (s *Server) handleRedoc(w http.ResponseWriter, r *http.Request) {
 	html := `<!DOCTYPE html>
 <html>
 <head>
-	<title>AgentFS API Documentation</title>
+	<title>StrataFS API Documentation</title>
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
@@ -362,12 +362,12 @@ func (s *Server) getOpenAPISpec() map[string]interface{} {
 	return map[string]interface{}{
 		"openapi": "3.0.3",
 		"info": map[string]interface{}{
-			"title":       "AgentFS API",
-			"description": "AgentFS - The Agentic Filesystem with hybrid search capabilities",
+			"title":       "StrataFS API",
+			"description": "StrataFS - The Agentic Filesystem with hybrid search capabilities",
 			"version":     s.config.Version,
 			"contact": map[string]interface{}{
-				"name": "AgentFS",
-				"url":  "https://github.com/yourusername/agentfs",
+				"name": "StrataFS",
+				"url":  "https://github.com/neul-labs/stratafs",
 			},
 		},
 		"servers": []map[string]interface{}{

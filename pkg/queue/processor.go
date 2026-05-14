@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"agentfs/pkg/chunking"
-	"agentfs/pkg/config"
-	"agentfs/pkg/database"
-	"agentfs/pkg/filesystem"
-	"agentfs/pkg/parsers"
-	"agentfs/pkg/search"
+	"github.com/neul-labs/stratafs/pkg/chunking"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/database"
+	"github.com/neul-labs/stratafs/pkg/filesystem"
+	"github.com/neul-labs/stratafs/pkg/parsers"
+	"github.com/neul-labs/stratafs/pkg/search"
 )
 
 // FileInfo represents file metadata for job processing
@@ -30,8 +30,8 @@ type TextEmbedder interface {
 	Embed(text string) ([]float32, error)
 }
 
-// AgentFSProcessor processes AgentFS jobs
-type AgentFSProcessor struct {
+// StrataFSProcessor processes StrataFS jobs
+type StrataFSProcessor struct {
 	config          *config.Config
 	databases       map[string]*database.DB
 	embedder        TextEmbedder
@@ -42,15 +42,15 @@ type AgentFSProcessor struct {
 	updateManagers  map[string]*database.FileUpdateManager
 }
 
-// NewAgentFSProcessor creates a new processor
-func NewAgentFSProcessor(cfg *config.Config, databases map[string]*database.DB, embedder TextEmbedder, queue *Queue, searchEngine *search.Engine) *AgentFSProcessor {
+// NewStrataFSProcessor creates a new processor
+func NewStrataFSProcessor(cfg *config.Config, databases map[string]*database.DB, embedder TextEmbedder, queue *Queue, searchEngine *search.Engine) *StrataFSProcessor {
 	// Initialize update managers for each database
 	updateManagers := make(map[string]*database.FileUpdateManager)
 	for dbID, db := range databases {
 		updateManagers[dbID] = database.NewFileUpdateManager(db, database.UpdateStrategySoftDelete)
 	}
 
-	return &AgentFSProcessor{
+	return &StrataFSProcessor{
 		config:          cfg,
 		databases:       databases,
 		embedder:        embedder,
@@ -63,7 +63,7 @@ func NewAgentFSProcessor(cfg *config.Config, databases map[string]*database.DB, 
 }
 
 // ProcessJob processes a job based on its type
-func (p *AgentFSProcessor) ProcessJob(ctx context.Context, job *Job) error {
+func (p *StrataFSProcessor) ProcessJob(ctx context.Context, job *Job) error {
 	switch job.Type {
 	case JobTypeParse:
 		return p.processParseJob(ctx, job)
@@ -77,7 +77,7 @@ func (p *AgentFSProcessor) ProcessJob(ctx context.Context, job *Job) error {
 }
 
 // processParseJob handles file parsing
-func (p *AgentFSProcessor) processParseJob(ctx context.Context, job *Job) error {
+func (p *StrataFSProcessor) processParseJob(ctx context.Context, job *Job) error {
 	// Try to parse as remote file payload first, fall back to FileInfo
 	var payload map[string]interface{}
 	var fileInfo FileInfo
@@ -161,7 +161,7 @@ func (p *AgentFSProcessor) processParseJob(ctx context.Context, job *Job) error 
 }
 
 // processEmbedJob handles text embedding
-func (p *AgentFSProcessor) processEmbedJob(ctx context.Context, job *Job) error {
+func (p *StrataFSProcessor) processEmbedJob(ctx context.Context, job *Job) error {
 	// Parse embed payload
 	var payload map[string]interface{}
 	if err := json.Unmarshal([]byte(job.Payload), &payload); err != nil {
@@ -246,7 +246,7 @@ func (p *AgentFSProcessor) processEmbedJob(ctx context.Context, job *Job) error 
 }
 
 // processIndexJob handles search index updates
-func (p *AgentFSProcessor) processIndexJob(ctx context.Context, job *Job) error {
+func (p *StrataFSProcessor) processIndexJob(ctx context.Context, job *Job) error {
 	// Get database for this directory
 	db, exists := p.databases[job.DirectoryID]
 	if !exists {
@@ -263,7 +263,7 @@ func (p *AgentFSProcessor) processIndexJob(ctx context.Context, job *Job) error 
 }
 
 // markFileDeleted marks a file as deleted in the database
-func (p *AgentFSProcessor) markFileDeleted(directoryID, filePath string) error {
+func (p *StrataFSProcessor) markFileDeleted(directoryID, filePath string) error {
 	db, exists := p.databases[directoryID]
 	if !exists {
 		return fmt.Errorf("database not found for directory: %s", directoryID)
@@ -273,7 +273,7 @@ func (p *AgentFSProcessor) markFileDeleted(directoryID, filePath string) error {
 }
 
 // processContentStreaming processes file content using streaming chunking and embeddings
-func (p *AgentFSProcessor) processContentStreaming(directoryID, filePath string, fileInfo FileInfo) error {
+func (p *StrataFSProcessor) processContentStreaming(directoryID, filePath string, fileInfo FileInfo) error {
 	// Get appropriate parser
 	parser := parsers.GetParser(filePath)
 	if parser == nil {
@@ -376,7 +376,7 @@ func (p *AgentFSProcessor) processContentStreaming(directoryID, filePath string,
 }
 
 // addEmbedJob adds an embedding job to the queue (deprecated - use streaming processing)
-func (p *AgentFSProcessor) addEmbedJob(job *Job) error {
+func (p *StrataFSProcessor) addEmbedJob(job *Job) error {
 	_, err := p.queue.AddJob(job.Type, job.FilePath, job.DirectoryID, job.Priority, job.Payload)
 	return err
 }

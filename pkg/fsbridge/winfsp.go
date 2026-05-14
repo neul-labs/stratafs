@@ -12,8 +12,8 @@ import (
 	"syscall"
 	"time"
 
-	"agentfs/pkg/config"
-	"agentfs/pkg/database"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/database"
 
 	"github.com/winfsp/cgofuse/fuse"
 )
@@ -24,7 +24,7 @@ type WinFspMount struct {
 	source       config.StorageSource
 	showChunks   bool
 	showMetadata bool
-	fs           *agentFSWin
+	fs           *strataFSWin
 	host         *fuse.FileSystemHost
 }
 
@@ -40,7 +40,7 @@ func NewWinFspMount(db *database.DB, source config.StorageSource, showChunks, sh
 
 // Mount mounts the filesystem at the specified drive letter or path
 func (m *WinFspMount) Mount(mountPoint string, allowOther, debug bool) error {
-	m.fs = &agentFSWin{
+	m.fs = &strataFSWin{
 		db:           m.db,
 		source:       m.source,
 		showChunks:   m.showChunks,
@@ -52,7 +52,7 @@ func (m *WinFspMount) Mount(mountPoint string, allowOther, debug bool) error {
 	m.host = fuse.NewFileSystemHost(m.fs)
 
 	// Build mount options
-	opts := []string{"-o", "volname=AgentFS"}
+	opts := []string{"-o", "volname=StrataFS"}
 	if debug {
 		opts = append(opts, "-d")
 	}
@@ -73,8 +73,8 @@ func (m *WinFspMount) Unmount() error {
 	return nil
 }
 
-// agentFSWin implements the WinFsp filesystem interface
-type agentFSWin struct {
+// strataFSWin implements the WinFsp filesystem interface
+type strataFSWin struct {
 	fuse.FileSystemBase
 	db           *database.DB
 	source       config.StorageSource
@@ -91,7 +91,7 @@ type openFile struct {
 }
 
 // Statfs returns filesystem statistics
-func (fs *agentFSWin) Statfs(path string, stat *fuse.Statfs_t) int {
+func (fs *strataFSWin) Statfs(path string, stat *fuse.Statfs_t) int {
 	stat.Bsize = 4096
 	stat.Frsize = 4096
 	stat.Blocks = 1000000
@@ -103,7 +103,7 @@ func (fs *agentFSWin) Statfs(path string, stat *fuse.Statfs_t) int {
 }
 
 // Getattr returns file attributes
-func (fs *agentFSWin) Getattr(path string, stat *fuse.Stat_t, fh uint64) int {
+func (fs *strataFSWin) Getattr(path string, stat *fuse.Stat_t, fh uint64) int {
 	path = normalizePath(path)
 
 	if path == "/" {
@@ -179,7 +179,7 @@ func (fs *agentFSWin) Getattr(path string, stat *fuse.Stat_t, fh uint64) int {
 }
 
 // Readdir reads directory contents
-func (fs *agentFSWin) Readdir(path string, fill func(name string, stat *fuse.Stat_t, ofst int64) bool, ofst int64, fh uint64) int {
+func (fs *strataFSWin) Readdir(path string, fill func(name string, stat *fuse.Stat_t, ofst int64) bool, ofst int64, fh uint64) int {
 	path = normalizePath(path)
 
 	fill(".", nil, 0)
@@ -247,7 +247,7 @@ func (fs *agentFSWin) Readdir(path string, fill func(name string, stat *fuse.Sta
 }
 
 // Open opens a file
-func (fs *agentFSWin) Open(path string, flags int) (int, uint64) {
+func (fs *strataFSWin) Open(path string, flags int) (int, uint64) {
 	path = normalizePath(path)
 
 	var data []byte
@@ -305,7 +305,7 @@ func (fs *agentFSWin) Open(path string, flags int) (int, uint64) {
 }
 
 // Read reads file content
-func (fs *agentFSWin) Read(path string, buff []byte, ofst int64, fh uint64) int {
+func (fs *strataFSWin) Read(path string, buff []byte, ofst int64, fh uint64) int {
 	fs.mu.RLock()
 	of, ok := fs.openFiles[fh]
 	fs.mu.RUnlock()
@@ -323,7 +323,7 @@ func (fs *agentFSWin) Read(path string, buff []byte, ofst int64, fh uint64) int 
 }
 
 // Release closes a file
-func (fs *agentFSWin) Release(path string, fh uint64) int {
+func (fs *strataFSWin) Release(path string, fh uint64) int {
 	fs.mu.Lock()
 	delete(fs.openFiles, fh)
 	fs.mu.Unlock()
@@ -332,14 +332,14 @@ func (fs *agentFSWin) Release(path string, fh uint64) int {
 
 // Helper functions
 
-func (fs *agentFSWin) toSourcePath(path string) string {
+func (fs *strataFSWin) toSourcePath(path string) string {
 	if path == "/" {
 		return fs.source.Path
 	}
 	return filepath.Join(fs.source.Path, path)
 }
 
-func (fs *agentFSWin) isDirectory(path string) bool {
+func (fs *strataFSWin) isDirectory(path string) bool {
 	files, err := fs.db.ListFiles()
 	if err != nil {
 		return false
@@ -354,7 +354,7 @@ func (fs *agentFSWin) isDirectory(path string) bool {
 	return false
 }
 
-func (fs *agentFSWin) buildMetadata(file *database.File) map[string]interface{} {
+func (fs *strataFSWin) buildMetadata(file *database.File) map[string]interface{} {
 	chunks, _ := fs.db.GetChunksByFileID(file.ID)
 
 	return map[string]interface{}{

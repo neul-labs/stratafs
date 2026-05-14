@@ -1,5 +1,5 @@
 /*
- * AgentFS Finder Sync Extension
+ * StrataFS Finder Sync Extension
  *
  * Adds context menu items and badges to files in Finder.
  * Build as a Finder Sync Extension target in Xcode.
@@ -15,7 +15,7 @@ class FinderSync: FIFinderSync {
     override init() {
         super.init()
 
-        // Load monitored directories from AgentFS config
+        // Load monitored directories from StrataFS config
         loadMonitoredDirectories()
 
         // Set monitored directories
@@ -25,7 +25,7 @@ class FinderSync: FIFinderSync {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(configChanged),
-            name: NSNotification.Name("AgentFSConfigChanged"),
+            name: NSNotification.Name("StrataFSConfigChanged"),
             object: nil
         )
     }
@@ -41,7 +41,7 @@ class FinderSync: FIFinderSync {
     }
 
     override func requestBadgeIdentifier(for url: URL) {
-        // Check if file is indexed by AgentFS
+        // Check if file is indexed by StrataFS
         if isFileIndexed(url) {
             FIFinderSyncController.default().setBadgeIdentifier("indexed", for: url)
         }
@@ -50,11 +50,11 @@ class FinderSync: FIFinderSync {
     // MARK: - Menu and toolbar item support
 
     override var toolbarItemName: String {
-        return "AgentFS"
+        return "StrataFS"
     }
 
     override var toolbarItemToolTip: String {
-        return "AgentFS Actions"
+        return "StrataFS Actions"
     }
 
     override var toolbarItemImage: NSImage {
@@ -62,12 +62,12 @@ class FinderSync: FIFinderSync {
     }
 
     override func menu(for menuKind: FIMenuKind) -> NSMenu {
-        let menu = NSMenu(title: "AgentFS")
+        let menu = NSMenu(title: "StrataFS")
 
         switch menuKind {
         case .contextualMenuForItems:
             // File context menu items
-            menu.addItem(withTitle: "View AgentFS Metadata", action: #selector(viewMetadata(_:)), keyEquivalent: "")
+            menu.addItem(withTitle: "View StrataFS Metadata", action: #selector(viewMetadata(_:)), keyEquivalent: "")
             menu.addItem(withTitle: "View Chunks", action: #selector(viewChunks(_:)), keyEquivalent: "")
             menu.addItem(NSMenuItem.separator())
             menu.addItem(withTitle: "Find Similar Files", action: #selector(findSimilar(_:)), keyEquivalent: "")
@@ -76,7 +76,7 @@ class FinderSync: FIFinderSync {
 
         case .contextualMenuForContainer:
             // Folder background menu items
-            menu.addItem(withTitle: "Add to AgentFS", action: #selector(addSource(_:)), keyEquivalent: "")
+            menu.addItem(withTitle: "Add to StrataFS", action: #selector(addSource(_:)), keyEquivalent: "")
             menu.addItem(withTitle: "Export Metadata Here", action: #selector(exportMetadata(_:)), keyEquivalent: "")
 
         case .contextualMenuForSidebar:
@@ -84,7 +84,7 @@ class FinderSync: FIFinderSync {
             break
 
         case .toolbarItemMenu:
-            menu.addItem(withTitle: "Open AgentFS", action: #selector(openApp(_:)), keyEquivalent: "")
+            menu.addItem(withTitle: "Open StrataFS", action: #selector(openApp(_:)), keyEquivalent: "")
             menu.addItem(withTitle: "Search...", action: #selector(search(_:)), keyEquivalent: "")
 
         @unknown default:
@@ -98,12 +98,12 @@ class FinderSync: FIFinderSync {
 
     @IBAction func viewMetadata(_ sender: AnyObject?) {
         guard let items = FIFinderSyncController.default().selectedItemURLs(), let url = items.first else { return }
-        runAgentFS(["file", "info", url.path])
+        runStrataFS(["file", "info", url.path])
     }
 
     @IBAction func viewChunks(_ sender: AnyObject?) {
         guard let items = FIFinderSyncController.default().selectedItemURLs(), let url = items.first else { return }
-        runAgentFS(["file", "chunks", url.path])
+        runStrataFS(["file", "chunks", url.path])
     }
 
     @IBAction func findSimilar(_ sender: AnyObject?) {
@@ -111,38 +111,38 @@ class FinderSync: FIFinderSync {
         // Open in browser with similarity search
         let task = Process()
         task.launchPath = "/usr/bin/open"
-        task.arguments = ["agentfs://search?similar=\(url.path)"]
+        task.arguments = ["stratafs://search?similar=\(url.path)"]
         try? task.run()
     }
 
     @IBAction func reindex(_ sender: AnyObject?) {
         guard let items = FIFinderSyncController.default().selectedItemURLs() else { return }
         for url in items {
-            runAgentFS(["file", "reindex", url.path])
+            runStrataFS(["file", "reindex", url.path])
         }
         showNotification("Queued \(items.count) file(s) for reindexing")
     }
 
     @IBAction func addSource(_ sender: AnyObject?) {
         guard let url = FIFinderSyncController.default().targetedURL() else { return }
-        runAgentFS(["source", "add", "--path", url.path])
+        runStrataFS(["source", "add", "--path", url.path])
         showNotification("Added source: \(url.lastPathComponent)")
     }
 
     @IBAction func exportMetadata(_ sender: AnyObject?) {
         guard let url = FIFinderSyncController.default().targetedURL() else { return }
-        runAgentFS(["fs", "export", "--output", url.path])
+        runStrataFS(["fs", "export", "--output", url.path])
         showNotification("Exported metadata to: \(url.lastPathComponent)")
     }
 
     @IBAction func openApp(_ sender: AnyObject?) {
-        NSWorkspace.shared.launchApplication("AgentFS")
+        NSWorkspace.shared.launchApplication("StrataFS")
     }
 
     @IBAction func search(_ sender: AnyObject?) {
         let task = Process()
         task.launchPath = "/usr/bin/open"
-        task.arguments = ["agentfs://search"]
+        task.arguments = ["stratafs://search"]
         try? task.run()
     }
 
@@ -150,7 +150,7 @@ class FinderSync: FIFinderSync {
 
     private func loadMonitoredDirectories() {
         let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let configPath = homeDir.appendingPathComponent(".agentfs/config.json")
+        let configPath = homeDir.appendingPathComponent(".stratafs/config.json")
 
         guard let data = try? Data(contentsOf: configPath),
               let config = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -169,7 +169,7 @@ class FinderSync: FIFinderSync {
 
     private func isFileIndexed(_ url: URL) -> Bool {
         let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let dbPath = homeDir.appendingPathComponent(".agentfs/agentfs.db").path
+        let dbPath = homeDir.appendingPathComponent(".stratafs/stratafs.db").path
 
         // Quick check via SQLite
         var db: OpaquePointer?
@@ -185,9 +185,9 @@ class FinderSync: FIFinderSync {
         return sqlite3_step(stmt) == SQLITE_ROW
     }
 
-    private func runAgentFS(_ arguments: [String]) {
+    private func runStrataFS(_ arguments: [String]) {
         let task = Process()
-        task.launchPath = "/usr/local/bin/agentfs"
+        task.launchPath = "/usr/local/bin/stratafs"
         task.arguments = arguments
 
         let pipe = Pipe()
@@ -205,7 +205,7 @@ class FinderSync: FIFinderSync {
 
     private func showNotification(_ message: String) {
         let notification = NSUserNotification()
-        notification.title = "AgentFS"
+        notification.title = "StrataFS"
         notification.informativeText = message
         NSUserNotificationCenter.default.deliver(notification)
     }
@@ -213,7 +213,7 @@ class FinderSync: FIFinderSync {
     private func showAlert(_ message: String) {
         DispatchQueue.main.async {
             let alert = NSAlert()
-            alert.messageText = "AgentFS"
+            alert.messageText = "StrataFS"
             alert.informativeText = message
             alert.alertStyle = .informational
             alert.runModal()

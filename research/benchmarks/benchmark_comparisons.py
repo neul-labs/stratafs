@@ -2,7 +2,7 @@
 """
 Comparison benchmarks against baseline systems.
 
-Compares AgentFS against:
+Compares StrataFS against:
 - ripgrep (pure keyword search)
 - Elasticsearch (traditional search engine)
 - OpenAI + FAISS (cloud embeddings)
@@ -130,7 +130,7 @@ def benchmark_elasticsearch(queries: list, es_endpoint: str = "http://localhost:
         start = time.perf_counter()
         try:
             req = urllib.request.Request(
-                f"{es_endpoint}/agentfs/_search",
+                f"{es_endpoint}/stratafs/_search",
                 data=json.dumps(es_query).encode(),
                 headers={"Content-Type": "application/json"}
             )
@@ -187,8 +187,8 @@ def benchmark_openai_faiss(queries: list, corpus_path: Path) -> dict:
     }
 
 
-def benchmark_agentfs(queries: list, endpoint: str = "http://localhost:8080") -> dict:
-    """Benchmark AgentFS for comparison."""
+def benchmark_stratafs(queries: list, endpoint: str = "http://localhost:8080") -> dict:
+    """Benchmark StrataFS for comparison."""
     results = []
 
     for query_data in queries[:20]:
@@ -217,7 +217,7 @@ def benchmark_agentfs(queries: list, endpoint: str = "http://localhost:8080") ->
     latencies = [r["latency_ms"] for r in successful]
 
     return {
-        "tool": "agentfs",
+        "tool": "stratafs",
         "num_queries": len(results),
         "successful": len(successful),
         "avg_latency_ms": sum(latencies) / len(latencies) if latencies else 0,
@@ -233,7 +233,7 @@ def generate_comparison_table(results: dict) -> str:
     ]
 
     systems = [
-        ("AgentFS", results.get("agentfs", {}), "Yes", "Yes", "Free"),
+        ("StrataFS", results.get("stratafs", {}), "Yes", "Yes", "Free"),
         ("ripgrep", results.get("ripgrep", {}), "No", "Yes", "Free"),
         ("Elasticsearch", results.get("elasticsearch", {}), "No", "Yes/No", "Free/$$"),
         ("OpenAI+FAISS", results.get("openai_faiss", {}), "Yes", "No", "$$$"),
@@ -253,7 +253,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run comparison benchmarks")
     parser.add_argument("--data-dir", type=str, required=True, help="Data directory")
     parser.add_argument("--output", type=str, required=True, help="Output JSON file")
-    parser.add_argument("--endpoint", type=str, default="http://localhost:8080", help="AgentFS endpoint")
+    parser.add_argument("--endpoint", type=str, default="http://localhost:8080", help="StrataFS endpoint")
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)
@@ -276,8 +276,8 @@ def main():
     }
 
     # Benchmark each system
-    print("Benchmarking AgentFS...")
-    results["benchmarks"]["agentfs"] = benchmark_agentfs(queries, args.endpoint)
+    print("Benchmarking StrataFS...")
+    results["benchmarks"]["stratafs"] = benchmark_stratafs(queries, args.endpoint)
 
     print("Benchmarking ripgrep...")
     if corpus_path.exists():

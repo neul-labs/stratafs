@@ -15,8 +15,8 @@ import (
 
 const (
 	searchProviderInterface = "org.gnome.Shell.SearchProvider2"
-	searchProviderPath      = "/org/agentfs/SearchProvider"
-	busName                 = "org.agentfs.SearchProvider"
+	searchProviderPath      = "/org/stratafs/SearchProvider"
+	busName                 = "org.stratafs.SearchProvider"
 )
 
 // GnomeSearchProvider implements the GNOME Shell SearchProvider2 D-Bus interface
@@ -125,7 +125,7 @@ func (p *GnomeSearchProvider) GetInitialResultSet(terms []string) ([]string, *db
 
 	var ids []string
 	for _, result := range results {
-		id := fmt.Sprintf("agentfs-%d", result.ID)
+		id := fmt.Sprintf("stratafs-%d", result.ID)
 		p.results[id] = result
 		ids = append(ids, id)
 	}
@@ -183,14 +183,14 @@ func (p *GnomeSearchProvider) ActivateResult(identifier string, terms []string, 
 	return nil
 }
 
-// LaunchSearch opens the AgentFS UI with the search query
+// LaunchSearch opens the StrataFS UI with the search query
 func (p *GnomeSearchProvider) LaunchSearch(terms []string, timestamp uint32) *dbus.Error {
 	query := strings.Join(terms, " ")
 
-	// Try to open agentfs-ui, fall back to web interface
+	// Try to open stratafs-ui, fall back to web interface
 	go func() {
 		// First try the desktop app
-		if err := execCommand("agentfs-ui"); err != nil {
+		if err := execCommand("stratafs-ui"); err != nil {
 			// Fall back to web interface
 			url := fmt.Sprintf("%s/docs?q=%s", p.apiURL, query)
 			_ = execCommand("xdg-open", url)
@@ -200,7 +200,7 @@ func (p *GnomeSearchProvider) LaunchSearch(terms []string, timestamp uint32) *db
 	return nil
 }
 
-// performSearch queries the AgentFS search engine
+// performSearch queries the StrataFS search engine
 func (p *GnomeSearchProvider) performSearch(query string) ([]SearchResult, error) {
 	if p.engine != nil {
 		// Direct engine access

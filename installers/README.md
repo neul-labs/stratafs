@@ -1,14 +1,14 @@
-# AgentFS Installers
+# StrataFS Installers
 
-This directory contains all the installation scripts and packages for deploying AgentFS across different platforms and environments.
+This directory contains all the installation scripts and packages for deploying StrataFS across different platforms and environments.
 
 ## Directory Structure
 
 ```
 installers/
 ├── windows/                    # Windows installers
-│   ├── agentfs.nsi            # NSIS installer script
-│   ├── agentfs-service.xml    # Windows service configuration
+│   ├── stratafs.nsi            # NSIS installer script
+│   ├── stratafs-service.xml    # Windows service configuration
 │   └── README.md              # Windows-specific documentation
 ├── macos/                     # macOS installers
 │   ├── build-pkg.sh           # PKG installer builder
@@ -19,12 +19,12 @@ installers/
 │   ├── build-appimage.sh      # AppImage builder
 │   ├── build-deb.sh           # Debian package builder
 │   ├── control               # DEB package control file
-│   ├── agentfs.service        # Systemd service file
+│   ├── stratafs.service        # Systemd service file
 │   └── README.md              # Linux-specific documentation
 ├── desktop/                   # Cross-platform desktop integration
-│   ├── agentfs-launcher.sh    # Universal launcher script
-│   ├── agentfs-tray.py        # System tray application
-│   ├── agentfs.desktop        # Linux desktop entry
+│   ├── stratafs-launcher.sh    # Universal launcher script
+│   ├── stratafs-tray.py        # System tray application
+│   ├── stratafs.desktop        # Linux desktop entry
 │   ├── auto-updater.sh        # Auto-update mechanism
 │   └── README.md              # Desktop integration documentation
 └── README.md                  # This file
@@ -36,14 +36,14 @@ installers/
 
 ```bash
 # Docker
-docker build -t agentfs .
-docker run -d -p 8080:8080 -p 8081:8081 agentfs
+docker build -t stratafs .
+docker run -d -p 8080:8080 -p 8081:8081 stratafs
 
 # Docker Compose
 docker-compose up -d
 
 # Kubernetes
-helm install agentfs ./helm/agentfs
+helm install stratafs ./helm/stratafs
 ```
 
 ### Desktop Installation
@@ -51,10 +51,10 @@ helm install agentfs ./helm/agentfs
 #### Windows
 ```cmd
 # Download and run the installer
-AgentFS-Setup.exe
+StrataFS-Setup.exe
 
 # Or build from source
-makensis agentfs.nsi
+makensis stratafs.nsi
 ```
 
 #### macOS
@@ -64,7 +64,7 @@ cd installers/macos
 ./build-pkg.sh
 
 # Install
-sudo installer -pkg dist/AgentFS-0.2.0.pkg -target /
+sudo installer -pkg dist/StrataFS-0.2.0.pkg -target /
 ```
 
 #### Linux
@@ -75,7 +75,7 @@ cd installers/linux
 
 # Or build DEB package
 ./build-deb.sh
-sudo apt install ./dist/agentfs_0.2.0_amd64.deb
+sudo apt install ./dist/stratafs_0.2.0_amd64.deb
 ```
 
 ## Installation Types
@@ -137,7 +137,7 @@ sudo apt install ./dist/agentfs_0.2.0_amd64.deb
 
 ## Cross-Platform Components
 
-### System Tray Application (`agentfs-tray.py`)
+### System Tray Application (`stratafs-tray.py`)
 
 A Python-based system tray application that provides:
 - Start/stop/restart controls
@@ -151,7 +151,7 @@ A Python-based system tray application that provides:
 - `tkinter` (fallback)
 - `PIL` (for icons)
 
-### Universal Launcher (`agentfs-launcher.sh`)
+### Universal Launcher (`stratafs-launcher.sh`)
 
 A bash script that provides:
 - Platform detection
@@ -204,9 +204,9 @@ All installers support configuration through:
 
 1. **Environment Variables**:
    ```bash
-   AGENTFS_CONFIG_DIR=/path/to/config
-   AGENTFS_API_PORT=8080
-   AGENTFS_MCP_PORT=8081
+   STRATAFS_CONFIG_DIR=/path/to/config
+   STRATAFS_API_PORT=8080
+   STRATAFS_MCP_PORT=8081
    ```
 
 2. **Configuration File** (`config.json`):
@@ -222,7 +222,7 @@ All installers support configuration through:
 
 3. **Command Line Arguments**:
    ```bash
-   agentfs --config-dir=/path/to/config --api-port=8080
+   stratafs --config-dir=/path/to/config --api-port=8080
    ```
 
 ## Security Considerations
@@ -264,11 +264,11 @@ All installers support configuration through:
 5. **Distribution**: Package repository updates
 
 ### Release Assets
-- Windows: `AgentFS-{version}-Setup.exe`
-- macOS: `AgentFS-{version}-{arch}.pkg`
-- Linux AppImage: `AgentFS-{version}-x86_64.AppImage`
-- Linux DEB: `agentfs_{version}_{arch}.deb`
-- Docker Images: `agentfs:{version}`
+- Windows: `StrataFS-{version}-Setup.exe`
+- macOS: `StrataFS-{version}-{arch}.pkg`
+- Linux AppImage: `StrataFS-{version}-x86_64.AppImage`
+- Linux DEB: `stratafs_{version}_{arch}.deb`
+- Docker Images: `stratafs:{version}`
 
 ## Support and Maintenance
 

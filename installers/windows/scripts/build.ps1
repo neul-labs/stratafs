@@ -1,4 +1,4 @@
-# AgentFS Windows Build Script
+# StrataFS Windows Build Script
 # Run in PowerShell as Administrator
 
 param(
@@ -12,40 +12,40 @@ $ProjectRoot = Resolve-Path "$ScriptDir\..\..\..\"
 $BuildDir = "$ProjectRoot\build\windows"
 
 # Get version from main.go
-$VersionLine = Get-Content "$ProjectRoot\cmd\agentfs\main.go" | Select-String 'version = "'
+$VersionLine = Get-Content "$ProjectRoot\cmd\stratafs\main.go" | Select-String 'version = "'
 $Version = ($VersionLine -split '"')[1]
 
-Write-Host "Building AgentFS v$Version for Windows..." -ForegroundColor Green
+Write-Host "Building StrataFS v$Version for Windows..." -ForegroundColor Green
 
 # Create build directory
 New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
 
-# Build main agentfs executable
-Write-Host "Building agentfs.exe..."
+# Build main stratafs executable
+Write-Host "Building stratafs.exe..."
 Push-Location $ProjectRoot
 $env:GOOS = "windows"
 $env:GOARCH = "amd64"
-go build -tags "fts5" -o "$BuildDir\agentfs.exe" .\cmd\agentfs
+go build -tags "fts5" -o "$BuildDir\stratafs.exe" .\cmd\stratafs
 Pop-Location
 
 # Build service
-Write-Host "Building agentfs-service.exe..."
+Write-Host "Building stratafs-service.exe..."
 Push-Location "$ProjectRoot\installers\windows\service"
-go build -o "$BuildDir\agentfs-service.exe" .
+go build -o "$BuildDir\stratafs-service.exe" .
 Pop-Location
 
 # Build tray app
-Write-Host "Building agentfs-tray.exe..."
+Write-Host "Building stratafs-tray.exe..."
 Push-Location "$ProjectRoot\installers\windows\tray"
-go build -ldflags="-H windowsgui" -o "$BuildDir\agentfs-tray.exe" .
+go build -ldflags="-H windowsgui" -o "$BuildDir\stratafs-tray.exe" .
 Pop-Location
 
 # Build Wails UI
-if (Test-Path "$ProjectRoot\desktop\agentfs-ui") {
-    Write-Host "Building agentfs-ui.exe..."
-    Push-Location "$ProjectRoot\desktop\agentfs-ui"
-    wails build -platform windows/amd64 -o agentfs-ui.exe
-    Copy-Item "build\bin\agentfs-ui.exe" "$BuildDir\"
+if (Test-Path "$ProjectRoot\desktop\stratafs-ui") {
+    Write-Host "Building stratafs-ui.exe..."
+    Push-Location "$ProjectRoot\desktop\stratafs-ui"
+    wails build -platform windows/amd64 -o stratafs-ui.exe
+    Copy-Item "build\bin\stratafs-ui.exe" "$BuildDir\"
     Pop-Location
 }
 
@@ -73,24 +73,24 @@ if (Test-Path $VsWhere) {
         Write-Host "Building shell extensions..."
 
         # Build context menu extension
-        if (Test-Path "$ProjectRoot\installers\explorer\AgentFSContextMenu.vcxproj") {
-            & $MsBuild "$ProjectRoot\installers\explorer\AgentFSContextMenu.vcxproj" `
+        if (Test-Path "$ProjectRoot\installers\explorer\StrataFSContextMenu.vcxproj") {
+            & $MsBuild "$ProjectRoot\installers\explorer\StrataFSContextMenu.vcxproj" `
                 /p:Configuration=Release /p:Platform=x64
-            Copy-Item "$ProjectRoot\installers\explorer\x64\Release\AgentFSContextMenu.dll" $BuildDir
+            Copy-Item "$ProjectRoot\installers\explorer\x64\Release\StrataFSContextMenu.dll" $BuildDir
         }
 
         # Build IFilter
-        if (Test-Path "$ProjectRoot\installers\ifilter\AgentFSFilter.vcxproj") {
-            & $MsBuild "$ProjectRoot\installers\ifilter\AgentFSFilter.vcxproj" `
+        if (Test-Path "$ProjectRoot\installers\ifilter\StrataFSFilter.vcxproj") {
+            & $MsBuild "$ProjectRoot\installers\ifilter\StrataFSFilter.vcxproj" `
                 /p:Configuration=Release /p:Platform=x64
-            Copy-Item "$ProjectRoot\installers\ifilter\x64\Release\AgentFSFilter.dll" $BuildDir
+            Copy-Item "$ProjectRoot\installers\ifilter\x64\Release\StrataFSFilter.dll" $BuildDir
         }
     }
 }
 
 # Copy registry files
-Copy-Item "$ProjectRoot\installers\explorer\AgentFSContextMenu.reg" $BuildDir
-Copy-Item "$ProjectRoot\installers\ifilter\AgentFSFilter.reg" $BuildDir
+Copy-Item "$ProjectRoot\installers\explorer\StrataFSContextMenu.reg" $BuildDir
+Copy-Item "$ProjectRoot\installers\ifilter\StrataFSFilter.reg" $BuildDir
 
 # Sign executables if requested
 if ($Sign -and $CertThumbprint) {
@@ -109,7 +109,7 @@ if (Test-Path $NsisPath) {
     & $NsisPath "$ScriptDir\installer.nsi"
 
     if ($Sign -and $CertThumbprint) {
-        signtool sign /sha1 $CertThumbprint /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "$BuildDir\AgentFS-Setup.exe"
+        signtool sign /sha1 $CertThumbprint /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "$BuildDir\StrataFS-Setup.exe"
     }
 } else {
     Write-Host "NSIS not found. Skipping installer creation." -ForegroundColor Yellow

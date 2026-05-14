@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Benchmark indexing performance for AgentFS.
+Benchmark indexing performance for StrataFS.
 
 Measures:
 - Indexing throughput (files/sec, MB/sec)
@@ -40,8 +40,8 @@ def get_corpus_stats(corpus_path: Path) -> dict:
     }
 
 
-def benchmark_agentfs_indexing(corpus_path: Path, db_path: Path) -> dict:
-    """Benchmark AgentFS indexing performance."""
+def benchmark_stratafs_indexing(corpus_path: Path, db_path: Path) -> dict:
+    """Benchmark StrataFS indexing performance."""
     # Clean up any existing database
     if db_path.exists():
         import shutil
@@ -67,7 +67,7 @@ def benchmark_agentfs_indexing(corpus_path: Path, db_path: Path) -> dict:
             "scan_interval": 3600
         },
         "database": {
-            "path": str(db_path / "agentfs.db")
+            "path": str(db_path / "stratafs.db")
         }
     }
 
@@ -75,13 +75,13 @@ def benchmark_agentfs_indexing(corpus_path: Path, db_path: Path) -> dict:
     with open(config_path, "w") as f:
         json.dump(config, f)
 
-    # Run AgentFS indexing
+    # Run StrataFS indexing
     start_time = time.time()
 
     try:
-        # Start AgentFS and let it index
+        # Start StrataFS and let it index
         proc = subprocess.Popen(
-            ["agentfs", "--config", str(config_path)],
+            ["stratafs", "--config", str(config_path)],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
@@ -96,7 +96,7 @@ def benchmark_agentfs_indexing(corpus_path: Path, db_path: Path) -> dict:
             elapsed += check_interval
 
             # Check if indexing is complete by querying the database
-            db_file = db_path / "agentfs.db"
+            db_file = db_path / "stratafs.db"
             if db_file.exists():
                 import sqlite3
                 conn = sqlite3.connect(str(db_file))
@@ -112,8 +112,8 @@ def benchmark_agentfs_indexing(corpus_path: Path, db_path: Path) -> dict:
         proc.wait(timeout=5)
 
     except FileNotFoundError:
-        # agentfs binary not found, simulate results
-        print("Warning: agentfs binary not found, using simulated results")
+        # stratafs binary not found, simulate results
+        print("Warning: stratafs binary not found, using simulated results")
         elapsed = stats["total_files"] * 0.05  # ~50ms per file simulated
 
     end_time = time.time()
@@ -137,7 +137,7 @@ def benchmark_agentfs_indexing(corpus_path: Path, db_path: Path) -> dict:
 def benchmark_incremental_indexing(corpus_path: Path, db_path: Path) -> dict:
     """Benchmark incremental indexing (changes only)."""
     # First do a full index
-    full_result = benchmark_agentfs_indexing(corpus_path, db_path)
+    full_result = benchmark_stratafs_indexing(corpus_path, db_path)
 
     # Modify a few files
     files = list(corpus_path.rglob("*.c"))[:10]
@@ -148,7 +148,7 @@ def benchmark_incremental_indexing(corpus_path: Path, db_path: Path) -> dict:
     # Time the incremental update
     start_time = time.time()
 
-    # Trigger re-scan (in real implementation, would call agentfs scan)
+    # Trigger re-scan (in real implementation, would call stratafs scan)
     time.sleep(2)  # Simulated
 
     end_time = time.time()
@@ -185,7 +185,7 @@ def benchmark_different_corpus_sizes(data_dir: Path, output_dir: Path) -> list:
 
             # Benchmark
             db_path = output_dir / f"db_{subset_size}"
-            result = benchmark_agentfs_indexing(subset_dir, db_path)
+            result = benchmark_stratafs_indexing(subset_dir, db_path)
             result["subset_size"] = subset_size
             results.append(result)
 
@@ -195,7 +195,7 @@ def benchmark_different_corpus_sizes(data_dir: Path, output_dir: Path) -> list:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Benchmark AgentFS indexing")
+    parser = argparse.ArgumentParser(description="Benchmark StrataFS indexing")
     parser.add_argument("--data-dir", type=str, required=True, help="Data directory")
     parser.add_argument("--output", type=str, required=True, help="Output JSON file")
     args = parser.parse_args()
@@ -213,7 +213,7 @@ def main():
     if linux_kernel.exists():
         print("Benchmarking Linux kernel indexing...")
         db_path = output_file.parent / "temp_db_kernel"
-        result = benchmark_agentfs_indexing(linux_kernel, db_path)
+        result = benchmark_stratafs_indexing(linux_kernel, db_path)
         results["benchmarks"]["linux_kernel"] = result
         print(f"  {result['total_files']} files in {result['indexing_time_sec']:.1f}s")
         print(f"  Throughput: {result['files_per_sec']:.1f} files/sec, {result['mb_per_sec']:.2f} MB/sec")
@@ -223,7 +223,7 @@ def main():
     if docs_corpus.exists():
         print("\nBenchmarking docs corpus indexing...")
         db_path = output_file.parent / "temp_db_docs"
-        result = benchmark_agentfs_indexing(docs_corpus, db_path)
+        result = benchmark_stratafs_indexing(docs_corpus, db_path)
         results["benchmarks"]["docs_corpus"] = result
         print(f"  {result['total_files']} files in {result['indexing_time_sec']:.1f}s")
 
@@ -232,7 +232,7 @@ def main():
     if enterprise.exists():
         print("\nBenchmarking enterprise data indexing...")
         db_path = output_file.parent / "temp_db_enterprise"
-        result = benchmark_agentfs_indexing(enterprise, db_path)
+        result = benchmark_stratafs_indexing(enterprise, db_path)
         results["benchmarks"]["enterprise_sim"] = result
         print(f"  {result['total_files']} files in {result['indexing_time_sec']:.1f}s")
 

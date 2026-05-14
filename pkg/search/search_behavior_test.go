@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"agentfs/pkg/config"
-	"agentfs/pkg/database"
-	"agentfs/pkg/embeddings"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/database"
+	"github.com/neul-labs/stratafs/pkg/embeddings"
 )
 
 func TestSearchModes(t *testing.T) {

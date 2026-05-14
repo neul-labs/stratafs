@@ -8,11 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # Build with required FTS5 support
 make build
-# OR: go build -o build/agentfs -tags "fts5" cmd/agentfs/main.go
+# OR: go build -o build/stratafs -tags "fts5" cmd/stratafs/main.go
 
 # Run during development
 make run
-# OR: go run -tags "fts5" cmd/agentfs/main.go
+# OR: go run -tags "fts5" cmd/stratafs/main.go
 
 # Install globally
 make install
@@ -43,7 +43,7 @@ make deps    # Manage dependencies
 
 ## Architecture Overview
 
-AgentFS is a multi-storage semantic filesystem that transforms passive file storage into an intelligent, searchable knowledge base. The architecture follows a layered approach with clear separation between storage, processing, search, and API layers.
+StrataFS is a multi-storage semantic filesystem that transforms passive file storage into an intelligent, searchable knowledge base. The architecture follows a layered approach with clear separation between storage, processing, search, and API layers.
 
 ### Core Flow
 1. **Storage Sources** → **Monitor** → **Queue** → **Parse/Chunk** → **Embed** → **Database** → **Search Engine** → **APIs**
@@ -151,7 +151,7 @@ The repository contains `MiniLM-L6-v2.Q8_0.gguf` for potential local embedding u
 ## Project Structure
 
 ```
-cmd/agentfs/          # Main application entry point
+cmd/stratafs/          # Main application entry point
 pkg/
 ├── api/              # REST API server
 ├── chunking/         # Text chunking strategies

@@ -1,4 +1,4 @@
-# Makefile for AgentFS
+# Makefile for StrataFS
 
 # Default target
 .PHONY: help
@@ -10,15 +10,15 @@ help: ## Show this help
 .PHONY: build
 build: ## Build the application with FTS5 support
 	mkdir -p build
-	go build -o build/agentfs -tags "fts5" cmd/agentfs/main.go
+	go build -o build/stratafs -tags "fts5" cmd/stratafs/main.go
 
 .PHONY: run
 run: ## Run the application with FTS5 support
-	go run -tags "fts5" cmd/agentfs/main.go
+	go run -tags "fts5" cmd/stratafs/main.go
 
 .PHONY: install
 install: ## Install the application
-	go install -tags "fts5" cmd/agentfs/main.go
+	go install -tags "fts5" cmd/stratafs/main.go
 
 .PHONY: clean
 clean: ## Clean build artifacts

@@ -1,8 +1,8 @@
-# AgentFS Installation Script for Windows PowerShell
-# Usage: Invoke-WebRequest -Uri "https://raw.githubusercontent.com/yourusername/agentfs/main/scripts/install.ps1" -OutFile "install.ps1"; .\install.ps1
+# StrataFS Installation Script for Windows PowerShell
+# Usage: Invoke-WebRequest -Uri "https://raw.githubusercontent.com/neul-labs/stratafs/main/scripts/install.ps1" -OutFile "install.ps1"; .\install.ps1
 
 param(
-    [string]$InstallDir = "$env:LOCALAPPDATA\AgentFS",
+    [string]$InstallDir = "$env:LOCALAPPDATA\StrataFS",
     [string]$Version = "latest",
     [switch]$Force = $false,
     [switch]$AddToPath = $true,
@@ -38,20 +38,20 @@ function Write-Error($message) {
 }
 
 function Show-Help {
-    Write-Output "AgentFS Installation Script for Windows"
+    Write-Output "StrataFS Installation Script for Windows"
     Write-Output ""
     Write-Output "Usage: .\install.ps1 [OPTIONS]"
     Write-Output ""
     Write-Output "Options:"
-    Write-Output "  -InstallDir DIR    Installation directory (default: %LOCALAPPDATA%\AgentFS)"
-    Write-Output "  -Version VERSION   AgentFS version to install (default: latest)"
+    Write-Output "  -InstallDir DIR    Installation directory (default: %LOCALAPPDATA%\StrataFS)"
+    Write-Output "  -Version VERSION   StrataFS version to install (default: latest)"
     Write-Output "  -Force            Force installation even if already installed"
     Write-Output "  -AddToPath        Add installation directory to PATH (default: true)"
     Write-Output "  -Help             Show this help message"
     Write-Output ""
     Write-Output "Examples:"
     Write-Output "  .\install.ps1"
-    Write-Output "  .\install.ps1 -InstallDir 'C:\Program Files\AgentFS'"
+    Write-Output "  .\install.ps1 -InstallDir 'C:\Program Files\StrataFS'"
     Write-Output "  .\install.ps1 -Version 'v0.2.0' -Force"
 }
 
@@ -78,7 +78,7 @@ function Get-LatestVersion {
     if ($Version -eq "latest") {
         Write-Info "Fetching latest version..."
         try {
-            $response = Invoke-RestMethod -Uri "https://api.github.com/repos/yourusername/agentfs/releases/latest"
+            $response = Invoke-RestMethod -Uri "https://api.github.com/repos/neul-labs/stratafs/releases/latest"
             $script:Version = $response.tag_name
         }
         catch {
@@ -86,17 +86,17 @@ function Get-LatestVersion {
             exit 1
         }
     }
-    Write-Info "Installing AgentFS version: $Version"
+    Write-Info "Installing StrataFS version: $Version"
 }
 
-function Download-AgentFS {
+function Download-StrataFS {
     $architecture = Get-Architecture
-    $downloadUrl = "https://github.com/yourusername/agentfs/releases/download/$Version/agentfs-$Version-windows-$architecture.zip"
+    $downloadUrl = "https://github.com/neul-labs/stratafs/releases/download/$Version/stratafs-$Version-windows-$architecture.zip"
     $tempDir = [System.IO.Path]::GetTempPath()
-    $tempFile = Join-Path $tempDir "agentfs.zip"
-    $extractDir = Join-Path $tempDir "agentfs-extract"
+    $tempFile = Join-Path $tempDir "stratafs.zip"
+    $extractDir = Join-Path $tempDir "stratafs-extract"
 
-    Write-Info "Downloading AgentFS from: $downloadUrl"
+    Write-Info "Downloading StrataFS from: $downloadUrl"
 
     try {
         # Download the file
@@ -104,7 +104,7 @@ function Download-AgentFS {
         $webClient.DownloadFile($downloadUrl, $tempFile)
 
         # Extract the archive
-        Write-Info "Extracting AgentFS..."
+        Write-Info "Extracting StrataFS..."
         if (Test-Path $extractDir) {
             Remove-Item $extractDir -Recurse -Force
         }
@@ -112,15 +112,15 @@ function Download-AgentFS {
         [System.IO.Compression.ZipFile]::ExtractToDirectory($tempFile, $extractDir)
 
         # Find the binary
-        $binaryPath = Get-ChildItem -Path $extractDir -Name "agentfs.exe" -Recurse | Select-Object -First 1
+        $binaryPath = Get-ChildItem -Path $extractDir -Name "stratafs.exe" -Recurse | Select-Object -First 1
         if (!$binaryPath) {
-            throw "AgentFS binary not found in archive"
+            throw "StrataFS binary not found in archive"
         }
 
         return Join-Path $extractDir $binaryPath.FullName
     }
     catch {
-        Write-Error "Failed to download or extract AgentFS: $_"
+        Write-Error "Failed to download or extract StrataFS: $_"
         exit 1
     }
     finally {
@@ -130,12 +130,12 @@ function Download-AgentFS {
     }
 }
 
-function Install-AgentFS($binaryPath) {
-    $installPath = Join-Path $InstallDir "agentfs.exe"
+function Install-StrataFS($binaryPath) {
+    $installPath = Join-Path $InstallDir "stratafs.exe"
 
     # Check if already installed
     if ((Test-Path $installPath) -and !$Force) {
-        Write-Warning "AgentFS is already installed at $installPath"
+        Write-Warning "StrataFS is already installed at $installPath"
         $response = Read-Host "Do you want to overwrite it? (y/N)"
         if ($response -notmatch "^[Yy]$") {
             Write-Info "Installation cancelled"
@@ -155,13 +155,13 @@ function Install-AgentFS($binaryPath) {
         }
     }
 
-    Write-Info "Installing AgentFS to $installPath..."
+    Write-Info "Installing StrataFS to $installPath..."
     try {
         Copy-Item $binaryPath $installPath -Force
-        Write-Success "AgentFS installed successfully!"
+        Write-Success "StrataFS installed successfully!"
     }
     catch {
-        Write-Error "Failed to install AgentFS: $_"
+        Write-Error "Failed to install StrataFS: $_"
         exit 1
     }
 }
@@ -195,7 +195,7 @@ function Add-ToPath($directory) {
 }
 
 function Setup-Config {
-    $configDir = Join-Path $env:USERPROFILE ".agentfs"
+    $configDir = Join-Path $env:USERPROFILE ".stratafs"
     $configFile = Join-Path $configDir "config.json"
 
     if (!(Test-Path $configDir)) {
@@ -205,9 +205,9 @@ function Setup-Config {
 
     if (!(Test-Path $configFile)) {
         Write-Info "Creating default configuration..."
-        $agentfsPath = Join-Path $InstallDir "agentfs.exe"
+        $stratafsPath = Join-Path $InstallDir "stratafs.exe"
         try {
-            & $agentfsPath config init
+            & $stratafsPath config init
             Write-Success "Default configuration created at $configFile"
         }
         catch {
@@ -221,32 +221,32 @@ function Setup-Config {
 function Test-Installation {
     Write-Info "Verifying installation..."
 
-    $agentfsPath = Join-Path $InstallDir "agentfs.exe"
+    $stratafsPath = Join-Path $InstallDir "stratafs.exe"
 
-    if (!(Test-Path $agentfsPath)) {
-        Write-Error "AgentFS binary not found at $agentfsPath"
+    if (!(Test-Path $stratafsPath)) {
+        Write-Error "StrataFS binary not found at $stratafsPath"
         return
     }
 
     try {
-        $version = & $agentfsPath --version 2>$null
+        $version = & $stratafsPath --version 2>$null
         if ($version) {
-            Write-Success "AgentFS $version is ready to use!"
+            Write-Success "StrataFS $version is ready to use!"
         } else {
-            Write-Success "AgentFS is installed and ready to use!"
+            Write-Success "StrataFS is installed and ready to use!"
         }
     }
     catch {
-        Write-Warning "AgentFS installed but version check failed: $_"
+        Write-Warning "StrataFS installed but version check failed: $_"
     }
 
     Write-Info "Next steps:"
     Write-Output "  1. Open a new terminal (if PATH was updated)"
-    Write-Output "  2. Initialize configuration: agentfs config init"
-    Write-Output "  3. Add storage sources: agentfs source add"
-    Write-Output "  4. Start AgentFS: agentfs"
+    Write-Output "  2. Initialize configuration: stratafs config init"
+    Write-Output "  3. Add storage sources: stratafs source add"
+    Write-Output "  4. Start StrataFS: stratafs"
     Write-Output ""
-    Write-Output "For more help, run: agentfs --help"
+    Write-Output "For more help, run: stratafs --help"
 }
 
 function Main {
@@ -255,20 +255,20 @@ function Main {
         return
     }
 
-    Write-Info "AgentFS Installation Script for Windows"
+    Write-Info "StrataFS Installation Script for Windows"
     Write-Info "======================================"
 
     # Check if running with sufficient privileges for system-wide install
     if ($InstallDir -like "$env:ProgramFiles*" -and !(Test-AdminRights)) {
         Write-Warning "Installing to Program Files requires administrator privileges"
         Write-Info "Either run as administrator or choose a user directory"
-        Write-Info "Using user directory: $env:LOCALAPPDATA\AgentFS"
-        $script:InstallDir = "$env:LOCALAPPDATA\AgentFS"
+        Write-Info "Using user directory: $env:LOCALAPPDATA\StrataFS"
+        $script:InstallDir = "$env:LOCALAPPDATA\StrataFS"
     }
 
     Get-LatestVersion
-    $binaryPath = Download-AgentFS
-    Install-AgentFS $binaryPath
+    $binaryPath = Download-StrataFS
+    Install-StrataFS $binaryPath
     Add-ToPath $InstallDir
     Setup-Config
     Test-Installation

@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"agentfs/pkg/config"
-	"agentfs/pkg/filesystem"
-	"agentfs/pkg/queue"
-	"agentfs/pkg/storage"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/filesystem"
+	"github.com/neul-labs/stratafs/pkg/queue"
+	"github.com/neul-labs/stratafs/pkg/storage"
 )
 
 // RemoteScanner handles periodic scanning and syncing of remote storage sources

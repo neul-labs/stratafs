@@ -4,33 +4,33 @@
 <array>
     <dict>
         <key>key</key>
-        <string>org_agentfs_checksum</string>
+        <string>org_stratafs_checksum</string>
         <key>type</key>
         <string>CFString</string>
         <key>multivalued</key>
         <false/>
         <key>description</key>
-        <string>AgentFS file checksum</string>
+        <string>StrataFS file checksum</string>
     </dict>
     <dict>
         <key>key</key>
-        <string>org_agentfs_file_id</string>
+        <string>org_stratafs_file_id</string>
         <key>type</key>
         <string>CFNumber</string>
         <key>multivalued</key>
         <false/>
         <key>description</key>
-        <string>AgentFS file ID</string>
+        <string>StrataFS file ID</string>
     </dict>
     <dict>
         <key>key</key>
-        <string>org_agentfs_indexed</string>
+        <string>org_stratafs_indexed</string>
         <key>type</key>
         <string>CFBoolean</string>
         <key>multivalued</key>
         <false/>
         <key>description</key>
-        <string>File indexed by AgentFS</string>
+        <string>File indexed by StrataFS</string>
     </dict>
 </array>
 </plist>

@@ -9,7 +9,7 @@ import (
 
 func TestDefaultConfigIncludesEnvironmentDirectories(t *testing.T) {
 	globalDir := t.TempDir()
-	t.Setenv("AGENTFS_GLOBAL_DIR", globalDir)
+	t.Setenv("STRATAFS_GLOBAL_DIR", globalDir)
 
 	additionalRoot := t.TempDir()
 	dirOne := filepath.Join(additionalRoot, "dir-one")
@@ -21,7 +21,7 @@ func TestDefaultConfigIncludesEnvironmentDirectories(t *testing.T) {
 		t.Fatalf("failed to create dirTwo: %v", err)
 	}
 
-	t.Setenv("AGENTFS_DIRS", strings.Join([]string{dirOne, dirTwo}, ","))
+	t.Setenv("STRATAFS_DIRS", strings.Join([]string{dirOne, dirTwo}, ","))
 
 	cfg := DefaultConfig()
 

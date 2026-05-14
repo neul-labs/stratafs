@@ -1,6 +1,6 @@
 #!/bin/bash
 # Release Bundle Script
-# Creates complete release bundles with agentfs, agentfs-ui, and ONNX runtime
+# Creates complete release bundles with stratafs, stratafs-ui, and ONNX runtime
 
 set -e
 
@@ -72,9 +72,9 @@ download_onnx() {
     success "ONNX Runtime downloaded"
 }
 
-# Build agentfs daemon
+# Build stratafs daemon
 build_daemon() {
-    info "Building agentfs daemon..."
+    info "Building stratafs daemon..."
     cd "$PROJECT_ROOT"
 
     local ldflags="-s -w -X main.version=$VERSION"
@@ -82,15 +82,15 @@ build_daemon() {
     go build \
         -tags "fts5" \
         -ldflags "$ldflags" \
-        -o "$BUILD_DIR/bin/agentfs" \
-        ./cmd/agentfs
+        -o "$BUILD_DIR/bin/stratafs" \
+        ./cmd/stratafs
 
-    success "agentfs daemon built"
+    success "stratafs daemon built"
 }
 
 # Build desktop UI
 build_desktop_ui() {
-    local desktop_dir="$PROJECT_ROOT/desktop/agentfs-ui"
+    local desktop_dir="$PROJECT_ROOT/desktop/stratafs-ui"
 
     if [ ! -d "$desktop_dir" ]; then
         warn "Desktop UI directory not found, skipping"
@@ -102,18 +102,18 @@ build_desktop_ui() {
         return 1
     fi
 
-    info "Building agentfs-ui desktop app..."
+    info "Building stratafs-ui desktop app..."
     cd "$desktop_dir"
 
     wails build -platform "$(detect_platform)"
 
-    cp "$desktop_dir/build/bin/agentfs-ui" "$BUILD_DIR/bin/"
-    success "agentfs-ui built"
+    cp "$desktop_dir/build/bin/stratafs-ui" "$BUILD_DIR/bin/"
+    success "stratafs-ui built"
 }
 
 # Create Linux bundle
 create_linux_bundle() {
-    local bundle_dir="$BUILD_DIR/agentfs-${VERSION}-linux-amd64"
+    local bundle_dir="$BUILD_DIR/stratafs-${VERSION}-linux-amd64"
 
     info "Creating Linux bundle..."
 
@@ -123,8 +123,8 @@ create_linux_bundle() {
     mkdir -p "$bundle_dir/share/systemd/user"
 
     # Copy binaries
-    cp "$BUILD_DIR/bin/agentfs" "$bundle_dir/bin/"
-    [ -f "$BUILD_DIR/bin/agentfs-ui" ] && cp "$BUILD_DIR/bin/agentfs-ui" "$bundle_dir/bin/"
+    cp "$BUILD_DIR/bin/stratafs" "$bundle_dir/bin/"
+    [ -f "$BUILD_DIR/bin/stratafs-ui" ] && cp "$BUILD_DIR/bin/stratafs-ui" "$bundle_dir/bin/"
 
     # Copy ONNX runtime
     if [ -d "$BUILD_DIR/onnx/lib" ]; then
@@ -132,26 +132,26 @@ create_linux_bundle() {
     fi
 
     # Create desktop entry
-    cat > "$bundle_dir/share/applications/agentfs-ui.desktop" << EOF
+    cat > "$bundle_dir/share/applications/stratafs-ui.desktop" << EOF
 [Desktop Entry]
-Name=AgentFS Control Panel
-Comment=Manage your AgentFS semantic filesystem
-Exec=agentfs-ui
-Icon=agentfs-ui
+Name=StrataFS Control Panel
+Comment=Manage your StrataFS semantic filesystem
+Exec=stratafs-ui
+Icon=stratafs-ui
 Terminal=false
 Type=Application
 Categories=Utility;FileTools;
 EOF
 
     # Create systemd service
-    cat > "$bundle_dir/share/systemd/user/agentfs.service" << EOF
+    cat > "$bundle_dir/share/systemd/user/stratafs.service" << EOF
 [Unit]
-Description=AgentFS Semantic Filesystem Daemon
+Description=StrataFS Semantic Filesystem Daemon
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=%h/.local/bin/agentfs
+ExecStart=%h/.local/bin/stratafs
 Environment=LD_LIBRARY_PATH=%h/.local/lib
 Restart=on-failure
 RestartSec=5
@@ -167,7 +167,7 @@ set -e
 
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local}"
 
-echo "Installing AgentFS to $INSTALL_DIR..."
+echo "Installing StrataFS to $INSTALL_DIR..."
 
 mkdir -p "$INSTALL_DIR/bin"
 mkdir -p "$INSTALL_DIR/lib"
@@ -191,19 +191,19 @@ echo "Add to your shell profile:"
 echo '  export PATH="$HOME/.local/bin:$PATH"'
 echo '  export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"'
 echo ""
-echo "To start AgentFS automatically:"
+echo "To start StrataFS automatically:"
 echo "  systemctl --user daemon-reload"
-echo "  systemctl --user enable agentfs"
-echo "  systemctl --user start agentfs"
+echo "  systemctl --user enable stratafs"
+echo "  systemctl --user start stratafs"
 echo ""
 echo "Initialize configuration:"
-echo "  agentfs config init"
+echo "  stratafs config init"
 EOF
     chmod +x "$bundle_dir/install.sh"
 
     # Create README
     cat > "$bundle_dir/README.md" << EOF
-# AgentFS $VERSION
+# StrataFS $VERSION
 
 ## Quick Start
 
@@ -220,37 +220,37 @@ EOF
 
 3. Initialize configuration:
    \`\`\`bash
-   agentfs config init
+   stratafs config init
    \`\`\`
 
 4. Start the service:
    \`\`\`bash
-   systemctl --user enable agentfs
-   systemctl --user start agentfs
+   systemctl --user enable stratafs
+   systemctl --user start stratafs
    \`\`\`
 
 5. Launch the control panel:
    \`\`\`bash
-   agentfs-ui
+   stratafs-ui
    \`\`\`
 
 ## Contents
 
-- \`bin/agentfs\` - Core daemon with indexing and search
-- \`bin/agentfs-ui\` - Desktop control panel
+- \`bin/stratafs\` - Core daemon with indexing and search
+- \`bin/stratafs-ui\` - Desktop control panel
 - \`lib/\` - ONNX Runtime libraries for embeddings
 - \`share/\` - Desktop entries and systemd service
 
 ## Documentation
 
-See https://github.com/dipankarsarkar/agentfs for full documentation.
+See https://github.com/neul-labs/stratafs for full documentation.
 EOF
 
     # Create archive
     cd "$BUILD_DIR"
-    tar -czf "agentfs-${VERSION}-linux-amd64.tar.gz" "$(basename "$bundle_dir")"
+    tar -czf "stratafs-${VERSION}-linux-amd64.tar.gz" "$(basename "$bundle_dir")"
 
-    success "Linux bundle created: agentfs-${VERSION}-linux-amd64.tar.gz"
+    success "Linux bundle created: stratafs-${VERSION}-linux-amd64.tar.gz"
 }
 
 # Generate checksums
@@ -268,7 +268,7 @@ generate_checksums() {
 # Main
 main() {
     echo ""
-    info "AgentFS Release Bundle Builder"
+    info "StrataFS Release Bundle Builder"
     info "==============================="
     info "Version: $VERSION"
     echo ""
@@ -320,7 +320,7 @@ case "${1:-}" in
         success "Clean complete"
         ;;
     help|--help|-h)
-        echo "AgentFS Release Bundle Script"
+        echo "StrataFS Release Bundle Script"
         echo ""
         echo "Usage: $0 [command]"
         echo ""

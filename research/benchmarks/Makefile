@@ -1,4 +1,4 @@
-# Makefile for AgentFS benchmarks
+# Makefile for StrataFS benchmarks
 # Uses Poetry for Python dependency management
 
 SHELL := /bin/bash
@@ -13,7 +13,7 @@ RESULTS_DIR := ./results
 all: install prepare benchmarks latex
 
 help:
-	@echo "AgentFS Benchmark Suite"
+	@echo "StrataFS Benchmark Suite"
 	@echo ""
 	@echo "Usage:"
 	@echo "  make install          Install dependencies with Poetry"
@@ -85,7 +85,7 @@ latex: install $(RESULTS_DIR)
 		--output $(RESULTS_DIR)/tables.tex
 	@echo ""
 	@echo "LaTeX tables saved to $(RESULTS_DIR)/tables.tex"
-	@echo "Copy these into ../agentfs-paper.tex"
+	@echo "Copy these into ../stratafs-paper.tex"
 
 clean:
 	rm -rf $(DATA_DIR) $(RESULTS_DIR)

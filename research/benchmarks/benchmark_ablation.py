@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Ablation studies for AgentFS.
+Ablation studies for StrataFS.
 
 Studies:
 - Chunk size impact
@@ -142,10 +142,10 @@ def ablation_tokenization(data_dir: Path) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run AgentFS ablation studies")
+    parser = argparse.ArgumentParser(description="Run StrataFS ablation studies")
     parser.add_argument("--data-dir", type=str, required=True, help="Data directory")
     parser.add_argument("--output", type=str, required=True, help="Output JSON file")
-    parser.add_argument("--endpoint", type=str, default="http://localhost:8080", help="AgentFS endpoint")
+    parser.add_argument("--endpoint", type=str, default="http://localhost:8080", help="StrataFS endpoint")
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)

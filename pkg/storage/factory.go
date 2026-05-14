@@ -2,8 +2,8 @@ package storage
 
 import (
 	"fmt"
-	"agentfs/pkg/config"
-	"agentfs/pkg/filesystem"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/filesystem"
 )
 
 // StorageFactory creates filesystem instances for different storage sources

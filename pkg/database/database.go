@@ -14,7 +14,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// DB represents a connection to the agentfs SQLite database
+// DB represents a connection to the stratafs SQLite database
 type DB struct {
 	conn *sql.DB
 }

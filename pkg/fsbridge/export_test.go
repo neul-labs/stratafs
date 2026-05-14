@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"agentfs/pkg/config"
-	"agentfs/pkg/database"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/database"
 )
 
 func TestExportVirtualFS(t *testing.T) {
@@ -16,7 +16,7 @@ func TestExportVirtualFS(t *testing.T) {
 		t.Fatalf("failed to create source root: %v", err)
 	}
 
-	dbPath := filepath.Join(tempDir, "agentfs.db")
+	dbPath := filepath.Join(tempDir, "stratafs.db")
 	db, err := database.NewDB(dbPath)
 	if err != nil {
 		t.Fatalf("failed to create db: %v", err)

@@ -132,11 +132,11 @@ type Config struct {
 
 // DefaultConfig creates a new configuration with default values
 func DefaultConfig() *Config {
-	// Get global directory (defaults to user's home/.agentfs)
-	globalDir := os.Getenv("AGENTFS_GLOBAL_DIR")
+	// Get global directory (defaults to user's home/.stratafs)
+	globalDir := os.Getenv("STRATAFS_GLOBAL_DIR")
 	if globalDir == "" {
 		home, _ := os.UserHomeDir()
-		globalDir = filepath.Join(home, ".agentfs")
+		globalDir = filepath.Join(home, ".stratafs")
 	}
 
 	// Create default local source for current directory
@@ -159,7 +159,7 @@ func DefaultConfig() *Config {
 	sources := []StorageSource{defaultSource}
 
 	// Add any environment-specified directories as additional sources
-	if dirs := os.Getenv("AGENTFS_DIRS"); dirs != "" {
+	if dirs := os.Getenv("STRATAFS_DIRS"); dirs != "" {
 		additionalPaths := strings.Split(dirs, ",")
 		for i, path := range additionalPaths {
 			cleanPath := filepath.Clean(path)
@@ -180,7 +180,7 @@ func DefaultConfig() *Config {
 
 	config := &Config{
 		Version:   "0.2.0",
-		AgentDir:  ".agentfs",
+		AgentDir:  ".stratafs",
 		GlobalDir: globalDir,
 		Sources:   sources,
 		Server: ServerConfig{
@@ -221,35 +221,35 @@ func DefaultConfig() *Config {
 // applyEnvironmentOverrides applies configuration from environment variables
 func (c *Config) applyEnvironmentOverrides() {
 	// Worker count override
-	if wc := os.Getenv("AGENTFS_WORKERS"); wc != "" {
+	if wc := os.Getenv("STRATAFS_WORKERS"); wc != "" {
 		if parsed, err := strconv.Atoi(wc); err == nil && parsed > 0 {
 			c.Worker.Count = parsed
 		}
 	}
 
 	// Scan interval override
-	if si := os.Getenv("AGENTFS_SCAN_INTERVAL"); si != "" {
+	if si := os.Getenv("STRATAFS_SCAN_INTERVAL"); si != "" {
 		if parsed, err := time.ParseDuration(si); err == nil {
 			c.Worker.ScanInterval = parsed
 		}
 	}
 
 	// API port override
-	if port := os.Getenv("AGENTFS_API_PORT"); port != "" {
+	if port := os.Getenv("STRATAFS_API_PORT"); port != "" {
 		if parsed, err := strconv.Atoi(port); err == nil && parsed > 0 {
 			c.Server.APIPort = parsed
 		}
 	}
 
 	// MCP port override
-	if port := os.Getenv("AGENTFS_MCP_PORT"); port != "" {
+	if port := os.Getenv("STRATAFS_MCP_PORT"); port != "" {
 		if parsed, err := strconv.Atoi(port); err == nil && parsed > 0 {
 			c.Server.MCPPort = parsed
 		}
 	}
 
 	// FastEmbed model override
-	if model := os.Getenv("AGENTFS_MODEL"); model != "" {
+	if model := os.Getenv("STRATAFS_MODEL"); model != "" {
 		var newModel FastEmbedModel
 		switch strings.ToLower(model) {
 		case "bge-base-en":
@@ -275,7 +275,7 @@ func (c *Config) applyEnvironmentOverrides() {
 	}
 
 	// FastEmbed cache directory override
-	if cacheDir := os.Getenv("AGENTFS_FASTEMBED_CACHE"); cacheDir != "" {
+	if cacheDir := os.Getenv("STRATAFS_FASTEMBED_CACHE"); cacheDir != "" {
 		c.Embedding.CacheDir = cacheDir
 	}
 }
@@ -283,10 +283,10 @@ func (c *Config) applyEnvironmentOverrides() {
 // LoadConfig loads configuration from a JSON file, creating default if not found
 func LoadConfig() (*Config, error) {
 	// Get global directory
-	globalDir := os.Getenv("AGENTFS_GLOBAL_DIR")
+	globalDir := os.Getenv("STRATAFS_GLOBAL_DIR")
 	if globalDir == "" {
 		home, _ := os.UserHomeDir()
-		globalDir = filepath.Join(home, ".agentfs")
+		globalDir = filepath.Join(home, ".stratafs")
 	}
 
 	configPath := filepath.Join(globalDir, "config.json")
@@ -361,7 +361,7 @@ func (c *Config) GetAgentPath(baseDir string) string {
 
 // GetDBPath returns the full path to the database file for a given base directory
 func (c *Config) GetDBPath(baseDir string) string {
-	return filepath.Join(c.GetAgentPath(baseDir), "agentfs.db")
+	return filepath.Join(c.GetAgentPath(baseDir), "stratafs.db")
 }
 
 // GetEnabledSources returns all enabled storage sources
@@ -443,7 +443,7 @@ func (c *Config) GetAgentPathForSource(source StorageSource) string {
 
 // GetDBPathForSource returns the database path for a storage source
 func (c *Config) GetDBPathForSource(source StorageSource) string {
-	return filepath.Join(c.GetAgentPathForSource(source), "agentfs.db")
+	return filepath.Join(c.GetAgentPathForSource(source), "stratafs.db")
 }
 
 // RemoveSource removes a storage source by ID

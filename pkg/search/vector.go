@@ -9,7 +9,7 @@ import (
 
 // VectorIndex manages vector similarity search using sqlite-vec in the main database
 type VectorIndex struct {
-	db         *sql.DB // Shared database with main AgentFS data
+	db         *sql.DB // Shared database with main StrataFS data
 	dimensions int
 	mutex      sync.RWMutex
 }
@@ -247,7 +247,7 @@ func (vi *VectorIndex) GetStats() map[string]interface{} {
 
 // Close saves the index (database is managed externally)
 func (vi *VectorIndex) Close() error {
-	// Don't close the database as it's shared with main AgentFS database
+	// Don't close the database as it's shared with main StrataFS database
 	// Just ensure data is persisted
 	return vi.Save()
 }

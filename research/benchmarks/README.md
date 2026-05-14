@@ -1,6 +1,6 @@
-# AgentFS Benchmark Suite
+# StrataFS Benchmark Suite
 
-Benchmarks for the AgentFS research paper.
+Benchmarks for the StrataFS research paper.
 
 ## Quick Start
 
@@ -34,7 +34,7 @@ make comparisons
 
 - Python 3.9+
 - Poetry
-- AgentFS running at localhost:8080 (for search benchmarks)
+- StrataFS running at localhost:8080 (for search benchmarks)
 - Optional: `OPENAI_API_KEY` for embedding comparisons
 
 ## Output

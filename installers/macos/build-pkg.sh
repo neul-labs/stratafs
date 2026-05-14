@@ -1,11 +1,11 @@
 #!/bin/bash
-# AgentFS macOS PKG Installer Build Script
+# StrataFS macOS PKG Installer Build Script
 
 set -e
 
 # Configuration
 VERSION="${VERSION:-0.2.0}"
-BINARY_PATH="${BINARY_PATH:-../../build/darwin-amd64/agentfs}"
+BINARY_PATH="${BINARY_PATH:-../../build/darwin-amd64/stratafs}"
 OUTPUT_DIR="${OUTPUT_DIR:-dist}"
 SIGN_IDENTITY="${SIGN_IDENTITY:-}"
 NOTARIZE="${NOTARIZE:-false}"
@@ -33,7 +33,7 @@ PAYLOAD_DIR="$BUILD_DIR/payload"
 SCRIPTS_DIR="$BUILD_DIR/scripts"
 RESOURCES_DIR="$BUILD_DIR/resources"
 
-print_info "Building AgentFS macOS Installer v$VERSION"
+print_info "Building StrataFS macOS Installer v$VERSION"
 
 # Check dependencies
 check_dependencies() {
@@ -52,7 +52,7 @@ check_dependencies() {
     if [ ! -f "$BINARY_PATH" ]; then
         print_error "Binary not found at: $BINARY_PATH"
         print_info "Please build the macOS binary first:"
-        print_info "  GOOS=darwin GOARCH=amd64 go build -tags 'fts5' -o build/darwin-amd64/agentfs ./cmd/agentfs"
+        print_info "  GOOS=darwin GOARCH=amd64 go build -tags 'fts5' -o build/darwin-amd64/stratafs ./cmd/stratafs"
         exit 1
     fi
 
@@ -65,9 +65,9 @@ setup_build_dirs() {
 
     rm -rf "$BUILD_DIR"
     mkdir -p "$PAYLOAD_DIR/usr/local/bin"
-    mkdir -p "$PAYLOAD_DIR/usr/local/share/agentfs"
-    mkdir -p "$PAYLOAD_DIR/Applications/AgentFS.app/Contents/MacOS"
-    mkdir -p "$PAYLOAD_DIR/Applications/AgentFS.app/Contents/Resources"
+    mkdir -p "$PAYLOAD_DIR/usr/local/share/stratafs"
+    mkdir -p "$PAYLOAD_DIR/Applications/StrataFS.app/Contents/MacOS"
+    mkdir -p "$PAYLOAD_DIR/Applications/StrataFS.app/Contents/Resources"
     mkdir -p "$SCRIPTS_DIR"
     mkdir -p "$RESOURCES_DIR"
     mkdir -p "$OUTPUT_DIR"
@@ -78,31 +78,31 @@ copy_files() {
     print_info "Copying files..."
 
     # Copy main binary
-    cp "$BINARY_PATH" "$PAYLOAD_DIR/usr/local/bin/agentfs"
-    chmod +x "$PAYLOAD_DIR/usr/local/bin/agentfs"
+    cp "$BINARY_PATH" "$PAYLOAD_DIR/usr/local/bin/stratafs"
+    chmod +x "$PAYLOAD_DIR/usr/local/bin/stratafs"
 
     # Copy ONNX Runtime libraries if available
     ONNX_LIB_DIR="$(dirname "$BINARY_PATH")/lib"
     if [ -d "$ONNX_LIB_DIR" ]; then
-        cp -r "$ONNX_LIB_DIR" "$PAYLOAD_DIR/usr/local/share/agentfs/"
+        cp -r "$ONNX_LIB_DIR" "$PAYLOAD_DIR/usr/local/share/stratafs/"
         print_info "Copied ONNX Runtime libraries"
     fi
 
     # Copy documentation
     if [ -f "$PROJECT_ROOT/README.md" ]; then
-        cp "$PROJECT_ROOT/README.md" "$PAYLOAD_DIR/usr/local/share/agentfs/"
+        cp "$PROJECT_ROOT/README.md" "$PAYLOAD_DIR/usr/local/share/stratafs/"
     fi
 
     if [ -f "$PROJECT_ROOT/LICENSE" ]; then
-        cp "$PROJECT_ROOT/LICENSE" "$PAYLOAD_DIR/usr/local/share/agentfs/"
+        cp "$PROJECT_ROOT/LICENSE" "$PAYLOAD_DIR/usr/local/share/stratafs/"
     fi
 
     # Create default configuration
-    cat > "$PAYLOAD_DIR/usr/local/share/agentfs/default-config.json" << 'EOF'
+    cat > "$PAYLOAD_DIR/usr/local/share/stratafs/default-config.json" << 'EOF'
 {
   "version": "0.2.0",
-  "agent_dir": ".agentfs",
-  "global_dir": "~/.agentfs",
+  "agent_dir": ".stratafs",
+  "global_dir": "~/.stratafs",
   "sources": [],
   "server": {
     "api_port": 8080,
@@ -115,7 +115,7 @@ copy_files() {
   },
   "embedding": {
     "model": "bge-base-en-v1.5",
-    "cache_dir": "~/.agentfs/fastembed_cache",
+    "cache_dir": "~/.stratafs/fastembed_cache",
     "dimension": 768
   },
   "database": {
@@ -138,11 +138,11 @@ EOF
 create_app_bundle() {
     print_info "Creating macOS app bundle..."
 
-    local app_dir="$PAYLOAD_DIR/Applications/AgentFS.app"
+    local app_dir="$PAYLOAD_DIR/Applications/StrataFS.app"
 
     # Copy binary to app bundle
-    cp "$BINARY_PATH" "$app_dir/Contents/MacOS/agentfs"
-    chmod +x "$app_dir/Contents/MacOS/agentfs"
+    cp "$BINARY_PATH" "$app_dir/Contents/MacOS/stratafs"
+    chmod +x "$app_dir/Contents/MacOS/stratafs"
 
     # Create Info.plist
     cat > "$app_dir/Contents/Info.plist" << EOF
@@ -151,13 +151,13 @@ create_app_bundle() {
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>agentfs</string>
+    <string>stratafs</string>
     <key>CFBundleIdentifier</key>
-    <string>com.agentfs.agentfs</string>
+    <string>com.stratafs.stratafs</string>
     <key>CFBundleName</key>
-    <string>AgentFS</string>
+    <string>StrataFS</string>
     <key>CFBundleDisplayName</key>
-    <string>AgentFS</string>
+    <string>StrataFS</string>
     <key>CFBundleVersion</key>
     <string>$VERSION</string>
     <key>CFBundleShortVersionString</key>
@@ -179,13 +179,13 @@ create_app_bundle() {
 EOF
 
     # Create app icon (placeholder)
-    if [ ! -f "$SCRIPT_DIR/assets/agentfs.icns" ]; then
+    if [ ! -f "$SCRIPT_DIR/assets/stratafs.icns" ]; then
         print_warning "App icon not found, creating placeholder"
         mkdir -p "$SCRIPT_DIR/assets"
         # This would normally be a proper ICNS file
-        touch "$app_dir/Contents/Resources/agentfs.icns"
+        touch "$app_dir/Contents/Resources/stratafs.icns"
     else
-        cp "$SCRIPT_DIR/assets/agentfs.icns" "$app_dir/Contents/Resources/"
+        cp "$SCRIPT_DIR/assets/stratafs.icns" "$app_dir/Contents/Resources/"
     fi
 }
 
@@ -196,11 +196,11 @@ create_installer_scripts() {
     # Pre-install script
     cat > "$SCRIPTS_DIR/preinstall" << 'EOF'
 #!/bin/bash
-# Stop AgentFS if running
-pkill -f agentfs || true
+# Stop StrataFS if running
+pkill -f stratafs || true
 
 # Stop LaunchAgent if running
-launchctl unload ~/Library/LaunchAgents/com.agentfs.agentfs.plist 2>/dev/null || true
+launchctl unload ~/Library/LaunchAgents/com.stratafs.stratafs.plist 2>/dev/null || true
 
 exit 0
 EOF
@@ -210,25 +210,25 @@ EOF
 #!/bin/bash
 
 # Ensure binary is executable
-chmod +x /usr/local/bin/agentfs
+chmod +x /usr/local/bin/stratafs
 
-# Create user's AgentFS directory
+# Create user's StrataFS directory
 USER_HOME="${3%/*}"
-USER_AGENTFS_DIR="$USER_HOME/.agentfs"
+USER_STRATAFS_DIR="$USER_HOME/.stratafs"
 
-if [ ! -d "$USER_AGENTFS_DIR" ]; then
-    mkdir -p "$USER_AGENTFS_DIR"
-    chown -R "${3##*/}:staff" "$USER_AGENTFS_DIR"
+if [ ! -d "$USER_STRATAFS_DIR" ]; then
+    mkdir -p "$USER_STRATAFS_DIR"
+    chown -R "${3##*/}:staff" "$USER_STRATAFS_DIR"
 fi
 
 # Initialize configuration if it doesn't exist
-if [ ! -f "$USER_AGENTFS_DIR/config.json" ]; then
-    sudo -u "${3##*/}" /usr/local/bin/agentfs config init --config-dir="$USER_AGENTFS_DIR"
+if [ ! -f "$USER_STRATAFS_DIR/config.json" ]; then
+    sudo -u "${3##*/}" /usr/local/bin/stratafs config init --config-dir="$USER_STRATAFS_DIR"
 fi
 
 # Create LaunchAgent plist for auto-start
 LAUNCH_AGENT_DIR="$USER_HOME/Library/LaunchAgents"
-LAUNCH_AGENT_PLIST="$LAUNCH_AGENT_DIR/com.agentfs.agentfs.plist"
+LAUNCH_AGENT_PLIST="$LAUNCH_AGENT_DIR/com.stratafs.stratafs.plist"
 
 mkdir -p "$LAUNCH_AGENT_DIR"
 
@@ -238,20 +238,20 @@ cat > "$LAUNCH_AGENT_PLIST" << PLIST_EOF
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.agentfs.agentfs</string>
+    <string>com.stratafs.stratafs</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/local/bin/agentfs</string>
-        <string>--config-dir=$USER_AGENTFS_DIR</string>
+        <string>/usr/local/bin/stratafs</string>
+        <string>--config-dir=$USER_STRATAFS_DIR</string>
     </array>
     <key>RunAtLoad</key>
     <false/>
     <key>KeepAlive</key>
     <false/>
     <key>StandardOutPath</key>
-    <string>$USER_AGENTFS_DIR/agentfs.log</string>
+    <string>$USER_STRATAFS_DIR/stratafs.log</string>
     <key>StandardErrorPath</key>
-    <string>$USER_AGENTFS_DIR/agentfs.error.log</string>
+    <string>$USER_STRATAFS_DIR/stratafs.error.log</string>
     <key>WorkingDirectory</key>
     <string>$USER_HOME</string>
 </dict>
@@ -260,13 +260,13 @@ PLIST_EOF
 
 chown "${3##*/}:staff" "$LAUNCH_AGENT_PLIST"
 
-# Ask user if they want to start AgentFS automatically
-echo "AgentFS has been installed successfully!"
-echo "To start AgentFS automatically at login, run:"
-echo "  launchctl load ~/Library/LaunchAgents/com.agentfs.agentfs.plist"
+# Ask user if they want to start StrataFS automatically
+echo "StrataFS has been installed successfully!"
+echo "To start StrataFS automatically at login, run:"
+echo "  launchctl load ~/Library/LaunchAgents/com.stratafs.stratafs.plist"
 echo ""
-echo "To start AgentFS now, run:"
-echo "  agentfs"
+echo "To start StrataFS now, run:"
+echo "  stratafs"
 
 exit 0
 EOF
@@ -282,8 +282,8 @@ create_distribution() {
     cat > "$BUILD_DIR/distribution.xml" << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
-    <title>AgentFS $VERSION</title>
-    <organization>com.agentfs</organization>
+    <title>StrataFS $VERSION</title>
+    <organization>com.stratafs</organization>
     <domains enable_anywhere="true"/>
     <options customize="never" require-scripts="false" rootVolumeOnly="true"/>
 
@@ -299,22 +299,22 @@ create_distribution() {
     <!-- Background -->
     <background file="background.png" mime-type="image/png" alignment="topleft" scaling="tofit"/>
 
-    <pkg-ref id="com.agentfs.agentfs"/>
+    <pkg-ref id="com.stratafs.stratafs"/>
 
     <options customize="never" require-scripts="false"/>
 
     <choices-outline>
         <line choice="default">
-            <line choice="com.agentfs.agentfs"/>
+            <line choice="com.stratafs.stratafs"/>
         </line>
     </choices-outline>
 
     <choice id="default"/>
-    <choice id="com.agentfs.agentfs" visible="false">
-        <pkg-ref id="com.agentfs.agentfs"/>
+    <choice id="com.stratafs.stratafs" visible="false">
+        <pkg-ref id="com.stratafs.stratafs"/>
     </choice>
 
-    <pkg-ref id="com.agentfs.agentfs" version="$VERSION" onConclusion="none">agentfs-core.pkg</pkg-ref>
+    <pkg-ref id="com.stratafs.stratafs" version="$VERSION" onConclusion="none">stratafs-core.pkg</pkg-ref>
 </installer-gui-script>
 EOF
 }
@@ -337,8 +337,8 @@ create_resources() {
     </style>
 </head>
 <body>
-    <h1>Welcome to AgentFS</h1>
-    <p>AgentFS transforms your filesystem into an intelligent, searchable knowledge base for AI agents.</p>
+    <h1>Welcome to StrataFS</h1>
+    <p>StrataFS transforms your filesystem into an intelligent, searchable knowledge base for AI agents.</p>
 
     <div class="feature"><span class="icon">✓</span>Semantic search across all your files</div>
     <div class="feature"><span class="icon">✓</span>AI agent integration via Model Context Protocol</div>
@@ -372,24 +372,24 @@ EOF
 </head>
 <body>
     <h1>Installation Complete!</h1>
-    <p>AgentFS has been successfully installed on your Mac.</p>
+    <p>StrataFS has been successfully installed on your Mac.</p>
 
     <div class="step">
         <strong>Next Steps:</strong>
         <ol>
             <li>Open Terminal</li>
-            <li>Initialize AgentFS: <div class="command">agentfs config init</div></li>
-            <li>Add storage sources: <div class="command">agentfs source add</div></li>
-            <li>Start AgentFS: <div class="command">agentfs</div></li>
+            <li>Initialize StrataFS: <div class="command">stratafs config init</div></li>
+            <li>Add storage sources: <div class="command">stratafs source add</div></li>
+            <li>Start StrataFS: <div class="command">stratafs</div></li>
         </ol>
     </div>
 
     <div class="step">
         <strong>Auto-start (optional):</strong>
-        <div class="command">launchctl load ~/Library/LaunchAgents/com.agentfs.agentfs.plist</div>
+        <div class="command">launchctl load ~/Library/LaunchAgents/com.stratafs.stratafs.plist</div>
     </div>
 
-    <p>For help and documentation, visit: <a href="https://github.com/yourusername/agentfs">github.com/yourusername/agentfs</a></p>
+    <p>For help and documentation, visit: <a href="https://github.com/neul-labs/stratafs">github.com/neul-labs/stratafs</a></p>
 </body>
 </html>
 EOF
@@ -412,19 +412,19 @@ build_package() {
     pkgbuild \
         --root "$PAYLOAD_DIR" \
         --scripts "$SCRIPTS_DIR" \
-        --identifier "com.agentfs.agentfs" \
+        --identifier "com.stratafs.stratafs" \
         --version "$VERSION" \
         --install-location "/" \
-        "$BUILD_DIR/agentfs-core.pkg"
+        "$BUILD_DIR/stratafs-core.pkg"
 
     # Build product (installer)
     productbuild \
         --distribution "$BUILD_DIR/distribution.xml" \
         --resources "$RESOURCES_DIR" \
         --package-path "$BUILD_DIR" \
-        "$OUTPUT_DIR/AgentFS-$VERSION.pkg"
+        "$OUTPUT_DIR/StrataFS-$VERSION.pkg"
 
-    print_success "Package built: $OUTPUT_DIR/AgentFS-$VERSION.pkg"
+    print_success "Package built: $OUTPUT_DIR/StrataFS-$VERSION.pkg"
 }
 
 # Sign the package (if requested)
@@ -435,18 +435,18 @@ sign_package() {
         # Sign the core package first
         productsign \
             --sign "$SIGN_IDENTITY" \
-            "$BUILD_DIR/agentfs-core.pkg" \
-            "$BUILD_DIR/agentfs-core-signed.pkg"
+            "$BUILD_DIR/stratafs-core.pkg" \
+            "$BUILD_DIR/stratafs-core-signed.pkg"
 
-        mv "$BUILD_DIR/agentfs-core-signed.pkg" "$BUILD_DIR/agentfs-core.pkg"
+        mv "$BUILD_DIR/stratafs-core-signed.pkg" "$BUILD_DIR/stratafs-core.pkg"
 
         # Sign the final installer
         productsign \
             --sign "$SIGN_IDENTITY" \
-            "$OUTPUT_DIR/AgentFS-$VERSION.pkg" \
-            "$OUTPUT_DIR/AgentFS-$VERSION-signed.pkg"
+            "$OUTPUT_DIR/StrataFS-$VERSION.pkg" \
+            "$OUTPUT_DIR/StrataFS-$VERSION-signed.pkg"
 
-        mv "$OUTPUT_DIR/AgentFS-$VERSION-signed.pkg" "$OUTPUT_DIR/AgentFS-$VERSION.pkg"
+        mv "$OUTPUT_DIR/StrataFS-$VERSION-signed.pkg" "$OUTPUT_DIR/StrataFS-$VERSION.pkg"
 
         print_success "Package signed successfully"
     fi
@@ -464,14 +464,14 @@ notarize_package() {
 
         # Upload for notarization
         xcrun notarytool submit \
-            "$OUTPUT_DIR/AgentFS-$VERSION.pkg" \
+            "$OUTPUT_DIR/StrataFS-$VERSION.pkg" \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_PASSWORD" \
             --team-id "$TEAM_ID" \
             --wait
 
         # Staple the notarization
-        xcrun stapler staple "$OUTPUT_DIR/AgentFS-$VERSION.pkg"
+        xcrun stapler staple "$OUTPUT_DIR/StrataFS-$VERSION.pkg"
 
         print_success "Package notarized and stapled"
     fi
@@ -481,7 +481,7 @@ notarize_package() {
 generate_checksum() {
     print_info "Generating checksum..."
 
-    local pkg_path="$OUTPUT_DIR/AgentFS-$VERSION.pkg"
+    local pkg_path="$OUTPUT_DIR/StrataFS-$VERSION.pkg"
     local checksum=$(shasum -a 256 "$pkg_path" | cut -d' ' -f1)
     echo "$checksum  $(basename "$pkg_path")" > "$pkg_path.sha256"
 
@@ -504,8 +504,8 @@ main() {
     generate_checksum
 
     print_success "macOS installer build completed!"
-    print_info "Installer: $OUTPUT_DIR/AgentFS-$VERSION.pkg"
-    print_info "Size: $(du -h "$OUTPUT_DIR/AgentFS-$VERSION.pkg" | cut -f1)"
+    print_info "Installer: $OUTPUT_DIR/StrataFS-$VERSION.pkg"
+    print_info "Size: $(du -h "$OUTPUT_DIR/StrataFS-$VERSION.pkg" | cut -f1)"
 
     if [ -n "$SIGN_IDENTITY" ]; then
         print_info "Signed: Yes"
@@ -517,10 +517,10 @@ main() {
 
     echo ""
     print_info "Installation instructions:"
-    print_info "1. Double-click AgentFS-$VERSION.pkg"
+    print_info "1. Double-click StrataFS-$VERSION.pkg"
     print_info "2. Follow the installation wizard"
-    print_info "3. Open Terminal and run 'agentfs config init'"
-    print_info "4. Start using AgentFS!"
+    print_info "3. Open Terminal and run 'stratafs config init'"
+    print_info "4. Start using StrataFS!"
 }
 
 # Parse command line arguments
@@ -559,13 +559,13 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --help)
-            echo "AgentFS macOS Installer Build Script"
+            echo "StrataFS macOS Installer Build Script"
             echo ""
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
             echo "  --version VERSION          Version string (default: 0.2.0)"
-            echo "  --binary-path PATH         Path to agentfs binary"
+            echo "  --binary-path PATH         Path to stratafs binary"
             echo "  --output-dir DIR           Output directory (default: dist)"
             echo "  --sign IDENTITY            Code signing identity"
             echo "  --notarize                 Enable notarization"

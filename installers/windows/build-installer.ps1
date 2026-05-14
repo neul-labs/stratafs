@@ -1,7 +1,7 @@
-# AgentFS Windows Installer Build Script
+# StrataFS Windows Installer Build Script
 param(
     [string]$Version = "0.2.0",
-    [string]$BinaryPath = "../../build/windows-amd64/agentfs.exe",
+    [string]$BinaryPath = "../../build/windows-amd64/stratafs.exe",
     [string]$OutputDir = "dist",
     [switch]$Sign = $false,
     [string]$SignCert = "",
@@ -19,7 +19,7 @@ $InstallerDir = $ScriptDir
 $BuildDir = Join-Path $InstallerDir "build"
 $AssetsDir = Join-Path $InstallerDir "assets"
 
-Write-Information "Building AgentFS Windows Installer v$Version"
+Write-Information "Building StrataFS Windows Installer v$Version"
 
 # Check NSIS installation
 $NSISPath = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
@@ -44,7 +44,7 @@ New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 if (-not (Test-Path $BinaryPath)) {
     Write-Error "Binary not found at: $BinaryPath"
     Write-Information "Please build the Windows binary first:"
-    Write-Information "  go build -tags 'fts5' -o build/windows-amd64/agentfs.exe ./cmd/agentfs"
+    Write-Information "  go build -tags 'fts5' -o build/windows-amd64/stratafs.exe ./cmd/stratafs"
     exit 1
 }
 
@@ -76,8 +76,8 @@ New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null
 
 $DefaultConfig = @{
     version = "0.2.0"
-    agent_dir = ".agentfs"
-    global_dir = "%APPDATA%\AgentFS"
+    agent_dir = ".stratafs"
+    global_dir = "%APPDATA%\StrataFS"
     sources = @()
     server = @{
         api_port = 8080
@@ -90,7 +90,7 @@ $DefaultConfig = @{
     }
     embedding = @{
         model = "bge-base-en-v1.5"
-        cache_dir = "%APPDATA%\AgentFS\fastembed_cache"
+        cache_dir = "%APPDATA%\StrataFS\fastembed_cache"
         dimension = 768
     }
     database = @{
@@ -115,7 +115,7 @@ if (-not (Test-Path $AssetsDir)) {
 }
 
 # Create basic icon (placeholder - should be replaced with actual icon)
-$IconPath = Join-Path $AssetsDir "agentfs.ico"
+$IconPath = Join-Path $AssetsDir "stratafs.ico"
 if (-not (Test-Path $IconPath)) {
     Write-Warning "Icon not found at $IconPath, using default"
     # Create a simple ICO file (this would normally be a proper icon)
@@ -140,7 +140,7 @@ $NSISArgs = @(
     "/DVERSION=$Version"
     "/DBUILD_DIR=$BuildDir"
     "/DOUTPUT_DIR=$OutputDir"
-    (Join-Path $InstallerDir "agentfs.nsi")
+    (Join-Path $InstallerDir "stratafs.nsi")
 )
 
 $Process = Start-Process -FilePath $NSISPath -ArgumentList $NSISArgs -Wait -PassThru -NoNewWindow
@@ -149,7 +149,7 @@ if ($Process.ExitCode -ne 0) {
     exit 1
 }
 
-$InstallerPath = Join-Path $OutputDir "AgentFS-$Version-Setup.exe"
+$InstallerPath = Join-Path $OutputDir "StrataFS-$Version-Setup.exe"
 if (-not (Test-Path $InstallerPath)) {
     Write-Error "Installer was not created at expected path: $InstallerPath"
     exit 1
@@ -214,14 +214,14 @@ Write-Information "SHA256: $($Hash.Hash)"
 Write-Information ""
 Write-Information "Running installer validation..."
 
-$TestArgs = @("/S", "/D=C:\Temp\AgentFSTest")
+$TestArgs = @("/S", "/D=C:\Temp\StrataFSTest")
 $TestProcess = Start-Process -FilePath $InstallerPath -ArgumentList $TestArgs -Wait -PassThru -NoNewWindow
 
 if ($TestProcess.ExitCode -eq 0) {
     Write-Information "Installer validation passed"
     # Cleanup test installation
-    if (Test-Path "C:\Temp\AgentFSTest") {
-        Remove-Item "C:\Temp\AgentFSTest" -Recurse -Force -ErrorAction SilentlyContinue
+    if (Test-Path "C:\Temp\StrataFSTest") {
+        Remove-Item "C:\Temp\StrataFSTest" -Recurse -Force -ErrorAction SilentlyContinue
     }
 } else {
     Write-Warning "Installer validation failed with exit code: $($TestProcess.ExitCode)"
@@ -229,7 +229,7 @@ if ($TestProcess.ExitCode -eq 0) {
 
 Write-Information ""
 Write-Information "Installation instructions:"
-Write-Information "1. Run AgentFS-$Version-Setup.exe as Administrator"
+Write-Information "1. Run StrataFS-$Version-Setup.exe as Administrator"
 Write-Information "2. Follow the installation wizard"
 Write-Information "3. Choose desktop application or Windows service mode"
-Write-Information "4. AgentFS will be available in Start Menu and Desktop (if selected)"
+Write-Information "4. StrataFS will be available in Start Menu and Desktop (if selected)"

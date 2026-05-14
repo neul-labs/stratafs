@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"agentfs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/config"
 	"github.com/anush008/fastembed-go"
 )
 

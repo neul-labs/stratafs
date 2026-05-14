@@ -1,15 +1,15 @@
 #!/bin/bash
-# AgentFS Auto-Updater Script
+# StrataFS Auto-Updater Script
 # Cross-platform automatic update checker and installer
 
 set -e
 
 # Configuration
-GITHUB_REPO="dipankar/agentfs"
-CURRENT_VERSION="${AGENTFS_VERSION:-0.2.0}"
-CONFIG_DIR="${AGENTFS_CONFIG_DIR:-$HOME/.agentfs}"
+GITHUB_REPO="dipankar/stratafs"
+CURRENT_VERSION="${STRATAFS_VERSION:-0.2.0}"
+CONFIG_DIR="${STRATAFS_CONFIG_DIR:-$HOME/.stratafs}"
 UPDATE_CHECK_FILE="$CONFIG_DIR/last_update_check"
-BINARY_NAME="agentfs"
+BINARY_NAME="stratafs"
 
 # Colors
 RED='\033[0;31m'
@@ -41,7 +41,7 @@ case "$PLATFORM" in
     CYGWIN*|MINGW*|MSYS*)
         OS="windows"
         ARCH="amd64"
-        BINARY_NAME="agentfs.exe"
+        BINARY_NAME="stratafs.exe"
         ;;
 esac
 
@@ -113,22 +113,22 @@ download_and_install() {
     local download_url=""
     local filename=""
 
-    log_info "Downloading AgentFS v$version..."
+    log_info "Downloading StrataFS v$version..."
 
     # Determine download URL based on platform
     case "$OS" in
         linux)
             if command -v apt-get >/dev/null 2>&1; then
-                filename="agentfs_${version}_${ARCH}.deb"
+                filename="stratafs_${version}_${ARCH}.deb"
             else
-                filename="AgentFS-${version}-x86_64.AppImage"
+                filename="StrataFS-${version}-x86_64.AppImage"
             fi
             ;;
         darwin)
-            filename="AgentFS-${version}-${ARCH}.pkg"
+            filename="StrataFS-${version}-${ARCH}.pkg"
             ;;
         windows)
-            filename="AgentFS-${version}-Setup.exe"
+            filename="StrataFS-${version}-Setup.exe"
             ;;
     esac
 
@@ -168,10 +168,10 @@ download_and_install() {
             chmod +x "$filename"
             # Move to applications directory
             mkdir -p "$HOME/.local/bin"
-            mv "$filename" "$HOME/.local/bin/agentfs"
+            mv "$filename" "$HOME/.local/bin/stratafs"
             # Update desktop integration if available
-            if [ -f "$HOME/.local/share/applications/agentfs.desktop" ]; then
-                sed -i "s|Exec=.*|Exec=$HOME/.local/bin/agentfs|" "$HOME/.local/share/applications/agentfs.desktop"
+            if [ -f "$HOME/.local/share/applications/stratafs.desktop" ]; then
+                sed -i "s|Exec=.*|Exec=$HOME/.local/bin/stratafs|" "$HOME/.local/share/applications/stratafs.desktop"
             fi
             ;;
         *.pkg)
@@ -198,26 +198,26 @@ download_and_install() {
 # Show update notification
 show_update_notification() {
     local version="$1"
-    local message="AgentFS v$version is available. Current version: v$CURRENT_VERSION"
+    local message="StrataFS v$version is available. Current version: v$CURRENT_VERSION"
 
     case "$OS" in
         linux)
             if command -v notify-send >/dev/null 2>&1; then
-                notify-send "AgentFS Update Available" "$message" -i "software-update-available"
+                notify-send "StrataFS Update Available" "$message" -i "software-update-available"
             elif command -v zenity >/dev/null 2>&1; then
-                zenity --info --text="$message\n\nWould you like to update now?" --title="AgentFS Update"
+                zenity --info --text="$message\n\nWould you like to update now?" --title="StrataFS Update"
                 return $?
             fi
             ;;
         darwin)
-            osascript -e "display notification \"$message\" with title \"AgentFS Update Available\""
+            osascript -e "display notification \"$message\" with title \"StrataFS Update Available\""
             osascript -e "display dialog \"$message\" buttons {\"Later\", \"Update Now\"} default button 2" >/dev/null 2>&1
             return $?
             ;;
         windows)
             powershell -Command "
                 Add-Type -AssemblyName System.Windows.Forms
-                [System.Windows.Forms.MessageBox]::Show('$message', 'AgentFS Update Available', 'YesNo', 'Information')
+                [System.Windows.Forms.MessageBox]::Show('$message', 'StrataFS Update Available', 'YesNo', 'Information')
             " 2>/dev/null | grep -q "Yes"
             return $?
             ;;
@@ -259,7 +259,7 @@ check_and_update() {
             log_info "Update postponed by user"
         fi
     else
-        log_info "AgentFS is up to date"
+        log_info "StrataFS is up to date"
     fi
 }
 
@@ -321,7 +321,7 @@ auto_updates_enabled() {
 # Show help
 show_help() {
     cat << EOF
-AgentFS Auto-Updater
+StrataFS Auto-Updater
 
 Usage: $0 [COMMAND]
 
@@ -334,10 +334,10 @@ Commands:
   help          Show this help message
 
 Environment Variables:
-  AGENTFS_VERSION           Current AgentFS version
-  AGENTFS_CONFIG_DIR        Configuration directory
+  STRATAFS_VERSION           Current StrataFS version
+  STRATAFS_CONFIG_DIR        Configuration directory
   UPDATE_CHECK_INTERVAL     Check interval in seconds (default: 86400)
-  GITHUB_REPO              GitHub repository (default: dipankar/agentfs)
+  GITHUB_REPO              GitHub repository (default: dipankar/stratafs)
 
 Examples:
   $0 check              # Check for updates

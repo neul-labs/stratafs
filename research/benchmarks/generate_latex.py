@@ -138,7 +138,7 @@ def generate_comparison_table(results: dict) -> str:
     benchmarks = results.get("benchmarks", {})
 
     systems = [
-        ("AgentFS", "agentfs", "\\checkmark", "\\checkmark", "Free"),
+        ("StrataFS", "stratafs", "\\checkmark", "\\checkmark", "Free"),
         ("ripgrep", "ripgrep", "--", "\\checkmark", "Free"),
         ("Elasticsearch", "elasticsearch", "--", "\\checkmark", "Free"),
         ("OpenAI+FAISS", "openai_faiss", "\\checkmark", "--", "\\$\\$\\$"),
@@ -207,7 +207,7 @@ def main():
     tables = []
 
     # Header
-    tables.append("% Auto-generated LaTeX tables for AgentFS paper")
+    tables.append("% Auto-generated LaTeX tables for StrataFS paper")
     tables.append(f"% Generated from results in {results_dir}")
     tables.append("")
 

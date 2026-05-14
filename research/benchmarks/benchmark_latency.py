@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Benchmark search latency for AgentFS.
+Benchmark search latency for StrataFS.
 
 Measures:
 - P50, P95, P99 latencies
@@ -160,10 +160,10 @@ def benchmark_cold_vs_warm(queries: list, endpoint: str) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Benchmark AgentFS search latency")
+    parser = argparse.ArgumentParser(description="Benchmark StrataFS search latency")
     parser.add_argument("--data-dir", type=str, required=True, help="Data directory")
     parser.add_argument("--output", type=str, required=True, help="Output JSON file")
-    parser.add_argument("--endpoint", type=str, default="http://localhost:8080", help="AgentFS endpoint")
+    parser.add_argument("--endpoint", type=str, default="http://localhost:8080", help="StrataFS endpoint")
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)

@@ -1,0 +1,44 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=StrataFS
+GenericName=Agentic Filesystem
+Comment=The Agentic Filesystem for AI agents
+Keywords=filesystem;search;ai;agent;embedding;semantic;indexing;
+Exec=stratafs-launcher
+Icon=stratafs
+Terminal=false
+StartupNotify=true
+Categories=System;FileManager;Network;Utility;
+MimeType=inode/directory;
+
+# Additional metadata
+X-GNOME-UsesNotifications=true
+X-Desktop-File-Install-Version=0.24
+
+# Actions for right-click menu
+Actions=start;stop;restart;status;config;web;
+
+[Desktop Action start]
+Name=Start StrataFS
+Exec=stratafs-launcher start
+
+[Desktop Action stop]
+Name=Stop StrataFS
+Exec=stratafs-launcher stop
+
+[Desktop Action restart]
+Name=Restart StrataFS
+Exec=stratafs-launcher restart
+
+[Desktop Action status]
+Name=Show Status
+Exec=stratafs-launcher status
+
+[Desktop Action config]
+Name=Show Configuration
+Exec=stratafs-launcher config
+
+[Desktop Action web]
+Name=Open Web Interface
+Exec=stratafs-launcher web

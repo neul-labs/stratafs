@@ -1,7 +1,7 @@
 {
   "version": "0.2.0",
-  "agent_dir": ".agentfs",
-  "global_dir": "/app/.agentfs",
+  "agent_dir": ".stratafs",
+  "global_dir": "/app/.stratafs",
   "sources": [
     {
       "id": "default-data",
@@ -30,7 +30,7 @@
   },
   "embedding": {
     "model": "bge-base-en-v1.5",
-    "cache_dir": "/app/.agentfs/fastembed_cache",
+    "cache_dir": "/app/.stratafs/fastembed_cache",
     "dimension": 768,
     "model_info": {
       "name": "BGE Base EN v1.5",

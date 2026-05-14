@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"agentfs/pkg/config"
-	"agentfs/pkg/queue"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/queue"
 )
 
 func TestFileWatcherLifecycle(t *testing.T) {
@@ -33,7 +33,7 @@ func TestFileWatcherLifecycle(t *testing.T) {
 			Enabled: true,
 			Path:    testDir,
 		}},
-		AgentDir: ".agentfs",
+		AgentDir: ".stratafs",
 		Worker: config.WorkerConfig{
 			ScanInterval: 100 * time.Millisecond,
 		},
@@ -242,7 +242,7 @@ func TestSupportedFileTypes(t *testing.T) {
 			Enabled: true,
 			Path:    tempDir,
 		}},
-		AgentDir: ".agentfs",
+		AgentDir: ".stratafs",
 		Worker: config.WorkerConfig{
 			ScanInterval: 100 * time.Millisecond,
 		},
@@ -312,7 +312,7 @@ func TestPeriodicScan(t *testing.T) {
 			Enabled: true,
 			Path:    tempDir,
 		}},
-		AgentDir: ".agentfs",
+		AgentDir: ".stratafs",
 		Worker: config.WorkerConfig{
 			ScanInterval: 50 * time.Millisecond, // Very frequent for testing
 		},
@@ -379,7 +379,7 @@ func TestIgnoreAgentDirectories(t *testing.T) {
 			Enabled: true,
 			Path:    tempDir,
 		}},
-		AgentDir: ".agentfs",
+		AgentDir: ".stratafs",
 		Worker: config.WorkerConfig{
 			ScanInterval: 100 * time.Millisecond,
 		},
@@ -402,8 +402,8 @@ func TestIgnoreAgentDirectories(t *testing.T) {
 		t.Fatalf("Failed to start file watcher: %v", err)
 	}
 
-	// Create .agentfs directory and file inside it
-	agentDir := filepath.Join(tempDir, ".agentfs")
+	// Create .stratafs directory and file inside it
+	agentDir := filepath.Join(tempDir, ".stratafs")
 	err = os.Mkdir(agentDir, 0755)
 	if err != nil {
 		t.Fatalf("Failed to create agent directory: %v", err)

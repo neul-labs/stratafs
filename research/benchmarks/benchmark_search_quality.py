@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Benchmark search quality for AgentFS.
+Benchmark search quality for StrataFS.
 
 Measures:
 - Precision@k, Recall@k, MRR
@@ -22,8 +22,8 @@ except ImportError:
     HAS_OPENAI = False
 
 
-def search_agentfs(query: str, endpoint: str = "http://localhost:8080", limit: int = 10) -> list:
-    """Search using AgentFS API."""
+def search_stratafs(query: str, endpoint: str = "http://localhost:8080", limit: int = 10) -> list:
+    """Search using StrataFS API."""
     import urllib.request
     import urllib.parse
 
@@ -66,7 +66,7 @@ def calculate_mrr(results: list, relevant: set) -> float:
 def evaluate_query(query: dict, endpoint: str = "http://localhost:8080") -> dict:
     """Evaluate a single query."""
     q = query["query"]
-    results = search_agentfs(q, endpoint, limit=20)
+    results = search_stratafs(q, endpoint, limit=20)
 
     # Extract file paths from results
     result_paths = [r.get("path", r.get("file_path", "")) for r in results]
@@ -176,10 +176,10 @@ def benchmark_openai_comparison(queries: list, data_dir: Path) -> Optional[dict]
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Benchmark AgentFS search quality")
+    parser = argparse.ArgumentParser(description="Benchmark StrataFS search quality")
     parser.add_argument("--data-dir", type=str, required=True, help="Data directory")
     parser.add_argument("--output", type=str, required=True, help="Output JSON file")
-    parser.add_argument("--endpoint", type=str, default="http://localhost:8080", help="AgentFS endpoint")
+    parser.add_argument("--endpoint", type=str, default="http://localhost:8080", help="StrataFS endpoint")
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)

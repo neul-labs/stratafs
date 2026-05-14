@@ -13,8 +13,8 @@ import (
 	"sync"
 	"syscall"
 
-	"agentfs/pkg/config"
-	"agentfs/pkg/database"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/database"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -30,7 +30,7 @@ type MountOptions struct {
 	ShowMetadata bool // Whether to expose metadata.json files
 }
 
-// FuseMount represents a mounted AgentFS filesystem.
+// FuseMount represents a mounted StrataFS filesystem.
 type FuseMount struct {
 	db       *database.DB
 	source   config.StorageSource
@@ -67,8 +67,8 @@ func (m *FuseMount) Mount() error {
 
 	// Build mount options
 	mountOpts := []fuse.MountOption{
-		fuse.FSName("agentfs"),
-		fuse.Subtype("agentfs"),
+		fuse.FSName("stratafs"),
+		fuse.Subtype("stratafs"),
 	}
 
 	if m.opts.ReadOnly {
@@ -87,7 +87,7 @@ func (m *FuseMount) Mount() error {
 	m.conn = conn
 
 	// Create the filesystem
-	filesystem := &agentFS{
+	filesystem := &strataFS{
 		db:           m.db,
 		source:       m.source,
 		showChunks:   m.opts.ShowChunks,
@@ -136,15 +136,15 @@ func (m *FuseMount) IsMounted() bool {
 	return m.mounted
 }
 
-// agentFS implements the FUSE filesystem interface.
-type agentFS struct {
+// strataFS implements the FUSE filesystem interface.
+type strataFS struct {
 	db           *database.DB
 	source       config.StorageSource
 	showChunks   bool
 	showMetadata bool
 }
 
-func (f *agentFS) Root() (fs.Node, error) {
+func (f *strataFS) Root() (fs.Node, error) {
 	return &Dir{
 		fs:   f,
 		path: "",
@@ -153,7 +153,7 @@ func (f *agentFS) Root() (fs.Node, error) {
 
 // Dir represents a directory in the filesystem.
 type Dir struct {
-	fs   *agentFS
+	fs   *strataFS
 	path string // Relative path from source root
 }
 
@@ -297,7 +297,7 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 // FileNode represents an indexed file.
 type FileNode struct {
-	fs   *agentFS
+	fs   *strataFS
 	file *database.File
 }
 
@@ -318,7 +318,7 @@ func (f *FileNode) ReadAll(ctx context.Context) ([]byte, error) {
 
 // ChunksDir represents the _chunks directory for a file.
 type ChunksDir struct {
-	fs     *agentFS
+	fs     *strataFS
 	fileID int64
 }
 
@@ -382,7 +382,7 @@ func (f *ChunkFile) ReadAll(ctx context.Context) ([]byte, error) {
 
 // MetadataFile represents the metadata.json virtual file.
 type MetadataFile struct {
-	fs   *agentFS
+	fs   *strataFS
 	file *database.File
 }
 
@@ -423,7 +423,7 @@ func (f *MetadataFile) generateContent() ([]byte, error) {
 
 // Ensure interfaces are implemented
 var (
-	_ fs.FS                 = (*agentFS)(nil)
+	_ fs.FS                 = (*strataFS)(nil)
 	_ fs.Node               = (*Dir)(nil)
 	_ fs.NodeStringLookuper = (*Dir)(nil)
 	_ fs.HandleReadDirAller = (*Dir)(nil)

@@ -3,7 +3,7 @@ package embeddings
 import (
 	"testing"
 
-	"agentfs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/config"
 )
 
 func TestValidateModel(t *testing.T) {

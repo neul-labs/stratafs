@@ -1,5 +1,5 @@
 #!/bin/bash
-# AgentFS Research Benchmarks
+# StrataFS Research Benchmarks
 # Run all benchmarks and generate results for the paper
 
 set -e
@@ -12,7 +12,7 @@ DATA_DIR="$SCRIPT_DIR/data"
 mkdir -p "$RESULTS_DIR"
 mkdir -p "$DATA_DIR"
 
-echo "=== AgentFS Research Benchmarks ==="
+echo "=== StrataFS Research Benchmarks ==="
 echo "Results will be saved to: $RESULTS_DIR"
 echo ""
 

@@ -37,8 +37,8 @@ ENV LD_LIBRARY_PATH="/opt/onnxruntime/lib:$LD_LIBRARY_PATH"
 RUN CGO_ENABLED=1 GOOS=linux go build \
     -tags "fts5" \
     -ldflags "-w -s" \
-    -o agentfs \
-    ./cmd/agentfs
+    -o stratafs \
+    ./cmd/stratafs
 
 # Runtime stage
 FROM alpine:3.21
@@ -52,24 +52,24 @@ RUN apk add --no-cache \
     && update-ca-certificates
 
 # Create non-root user
-RUN addgroup -g 1001 agentfs && \
-    adduser -D -s /bin/sh -u 1001 -G agentfs agentfs
+RUN addgroup -g 1001 stratafs && \
+    adduser -D -s /bin/sh -u 1001 -G stratafs stratafs
 
 # Copy ONNX Runtime libraries
 COPY --from=builder /opt/onnxruntime/lib/* /usr/local/lib/
 
 # Copy binary
-COPY --from=builder /app/agentfs /usr/local/bin/agentfs
+COPY --from=builder /app/stratafs /usr/local/bin/stratafs
 
 # Create directories with proper permissions
-RUN mkdir -p /app/data /app/config /app/.agentfs && \
-    chown -R agentfs:agentfs /app
+RUN mkdir -p /app/data /app/config /app/.stratafs && \
+    chown -R stratafs:stratafs /app
 
 # Set library path
 ENV LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 
 # Switch to non-root user
-USER agentfs
+USER stratafs
 
 # Set working directory
 WORKDIR /app
@@ -78,11 +78,11 @@ WORKDIR /app
 EXPOSE 8080 8081
 
 # Add volume for persistent data
-VOLUME ["/app/data", "/app/.agentfs"]
+VOLUME ["/app/data", "/app/.stratafs"]
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # Default command
-CMD ["agentfs"]
+CMD ["stratafs"]

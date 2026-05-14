@@ -13,10 +13,10 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 
-	"agentfs/pkg/config"
-	"agentfs/pkg/filesystem"
-	"agentfs/pkg/parsers"
-	"agentfs/pkg/queue"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/filesystem"
+	"github.com/neul-labs/stratafs/pkg/parsers"
+	"github.com/neul-labs/stratafs/pkg/queue"
 )
 
 // FileWatcher provides cross-platform file watching capabilities
@@ -107,7 +107,7 @@ func (fw *FileWatcher) addDirectoryRecursive(root string) error {
 			return err
 		}
 
-		// Skip .agentfs directories
+		// Skip .stratafs directories
 		if info.IsDir() && info.Name() == fw.config.AgentDir {
 			return filepath.SkipDir
 		}
@@ -145,7 +145,7 @@ func (fw *FileWatcher) processEvents() {
 
 // handleEvent processes a single file system event
 func (fw *FileWatcher) handleEvent(event fsnotify.Event) {
-	// Skip events for .agentfs directories
+	// Skip events for .stratafs directories
 	if filepath.Base(filepath.Dir(event.Name)) == fw.config.AgentDir ||
 	   filepath.Base(event.Name) == fw.config.AgentDir {
 		return
@@ -300,7 +300,7 @@ func (fw *FileWatcher) scanDirectory(dir string) {
 			return err
 		}
 
-		// Skip .agentfs directories
+		// Skip .stratafs directories
 		if info.IsDir() && info.Name() == fw.config.AgentDir {
 			return filepath.SkipDir
 		}

@@ -11,14 +11,14 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'agentfs'
+  - job_name: 'stratafs'
     static_configs:
-      - targets: ['agentfs:8080']
+      - targets: ['stratafs:8080']
     metrics_path: '/metrics'
     scrape_interval: 30s
 
-  - job_name: 'agentfs-health'
+  - job_name: 'stratafs-health'
     static_configs:
-      - targets: ['agentfs:8080']
+      - targets: ['stratafs:8080']
     metrics_path: '/health'
     scrape_interval: 10s

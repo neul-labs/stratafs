@@ -1,29 +1,29 @@
 version: '3.8'
 
 services:
-  agentfs:
+  stratafs:
     build:
       context: .
       dockerfile: Dockerfile
-    image: agentfs:latest
-    container_name: agentfs
+    image: stratafs:latest
+    container_name: stratafs
     restart: unless-stopped
     ports:
       - "8080:8080"  # REST API
       - "8081:8081"  # MCP Server
     volumes:
-      - agentfs_data:/app/data
-      - agentfs_config:/app/.agentfs
+      - stratafs_data:/app/data
+      - stratafs_config:/app/.stratafs
       - ./docker/config.json:/app/config.json:ro
       # Mount additional directories for indexing
       - ./docs:/app/data/docs:ro
       - ./examples:/app/data/examples:ro
     environment:
-      - AGENTFS_GLOBAL_DIR=/app/.agentfs
-      - AGENTFS_API_PORT=8080
-      - AGENTFS_MCP_PORT=8081
-      - AGENTFS_WORKER_COUNT=4
-      - AGENTFS_LOG_LEVEL=info
+      - STRATAFS_GLOBAL_DIR=/app/.stratafs
+      - STRATAFS_API_PORT=8080
+      - STRATAFS_MCP_PORT=8081
+      - STRATAFS_WORKER_COUNT=4
+      - STRATAFS_LOG_LEVEL=info
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
@@ -32,17 +32,17 @@ services:
       start_period: 30s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.agentfs-api.rule=Host(`agentfs.local`)"
-      - "traefik.http.routers.agentfs-api.service=agentfs-api"
-      - "traefik.http.services.agentfs-api.loadbalancer.server.port=8080"
-      - "traefik.http.routers.agentfs-mcp.rule=Host(`agentfs-mcp.local`)"
-      - "traefik.http.routers.agentfs-mcp.service=agentfs-mcp"
-      - "traefik.http.services.agentfs-mcp.loadbalancer.server.port=8081"
+      - "traefik.http.routers.stratafs-api.rule=Host(`stratafs.local`)"
+      - "traefik.http.routers.stratafs-api.service=stratafs-api"
+      - "traefik.http.services.stratafs-api.loadbalancer.server.port=8080"
+      - "traefik.http.routers.stratafs-mcp.rule=Host(`stratafs-mcp.local`)"
+      - "traefik.http.routers.stratafs-mcp.service=stratafs-mcp"
+      - "traefik.http.services.stratafs-mcp.loadbalancer.server.port=8081"
 
   # Optional: Reverse proxy for production
   traefik:
     image: traefik:v2.10
-    container_name: agentfs-traefik
+    container_name: stratafs-traefik
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
@@ -66,7 +66,7 @@ services:
   # Optional: Monitoring with Prometheus
   prometheus:
     image: prom/prometheus:latest
-    container_name: agentfs-prometheus
+    container_name: stratafs-prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -85,7 +85,7 @@ services:
   # Optional: Grafana for metrics visualization
   grafana:
     image: grafana/grafana:latest
-    container_name: agentfs-grafana
+    container_name: stratafs-grafana
     ports:
       - "3000:3000"
     volumes:
@@ -100,9 +100,9 @@ services:
     restart: unless-stopped
 
 volumes:
-  agentfs_data:
+  stratafs_data:
     driver: local
-  agentfs_config:
+  stratafs_config:
     driver: local
   traefik_letsencrypt:
     driver: local
@@ -113,4 +113,4 @@ volumes:
 
 networks:
   default:
-    name: agentfs_network
+    name: stratafs_network

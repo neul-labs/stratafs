@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"agentfs/pkg/config"
-	"agentfs/pkg/database"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/database"
 )
 
 // FileMetadata represents the metadata persisted for each file during export.

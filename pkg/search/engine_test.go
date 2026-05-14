@@ -4,9 +4,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"agentfs/pkg/config"
-	"agentfs/pkg/database"
-	"agentfs/pkg/embeddings"
+	"github.com/neul-labs/stratafs/pkg/config"
+	"github.com/neul-labs/stratafs/pkg/database"
+	"github.com/neul-labs/stratafs/pkg/embeddings"
 )
 
 func TestNewEngine(t *testing.T) {

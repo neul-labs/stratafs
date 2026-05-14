@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Prepare datasets for AgentFS benchmarks.
+Prepare datasets for StrataFS benchmarks.
 
 Downloads/generates:
 1. Linux Kernel source (subset)

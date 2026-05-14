@@ -1,18 +1,18 @@
-# AgentFS Nautilus Extension
+# StrataFS Nautilus Extension
 
-Adds AgentFS context menu actions to GNOME Files (Nautilus).
+Adds StrataFS context menu actions to GNOME Files (Nautilus).
 
 ## Features
 
 ### File Actions (right-click on files)
-- **View AgentFS Metadata** - Show file info, checksum, size, timestamps
-- **View AgentFS Chunks** - Display extracted text chunks
+- **View StrataFS Metadata** - Show file info, checksum, size, timestamps
+- **View StrataFS Chunks** - Display extracted text chunks
 - **Find Similar Files** - Semantic search for similar content
-- **Reindex in AgentFS** - Queue file(s) for reprocessing
+- **Reindex in StrataFS** - Queue file(s) for reprocessing
 
 ### Folder Actions (right-click on folder background)
-- **Add Folder to AgentFS** - Add folder as a new source
-- **Export AgentFS Metadata Here** - Export metadata view to folder
+- **Add Folder to StrataFS** - Add folder as a new source
+- **Export StrataFS Metadata Here** - Export metadata view to folder
 
 ## Installation
 
@@ -21,7 +21,7 @@ Adds AgentFS context menu actions to GNOME Files (Nautilus).
 mkdir -p ~/.local/share/nautilus-python/extensions
 
 # Copy extension
-cp agentfs-nautilus.py ~/.local/share/nautilus-python/extensions/
+cp stratafs-nautilus.py ~/.local/share/nautilus-python/extensions/
 
 # Restart Nautilus
 nautilus -q
@@ -33,7 +33,7 @@ nautilus -q
 - python3-nautilus package
 - zenity (for dialogs)
 - notify-send (for notifications)
-- AgentFS CLI installed and in PATH
+- StrataFS CLI installed and in PATH
 
 Install dependencies on Ubuntu/Debian:
 ```bash
@@ -42,7 +42,7 @@ sudo apt install python3-nautilus zenity libnotify-bin
 
 ## Configuration
 
-Set `AGENTFS_API_URL` environment variable if using non-default API URL:
+Set `STRATAFS_API_URL` environment variable if using non-default API URL:
 ```bash
-export AGENTFS_API_URL=http://localhost:9000
+export STRATAFS_API_URL=http://localhost:9000
 ```

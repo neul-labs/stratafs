@@ -93,18 +93,18 @@ jobs:
 
     - name: Build binary
       run: |
-        go build -tags "fts5" -v -o build/agentfs ./cmd/agentfs
+        go build -tags "fts5" -v -o build/stratafs ./cmd/stratafs
 
     - name: Test binary
       run: |
-        ./build/agentfs --version
-        ./build/agentfs --help
+        ./build/stratafs --version
+        ./build/stratafs --help
 
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: agentfs-linux-amd64
-        path: build/agentfs
+        name: stratafs-linux-amd64
+        path: build/stratafs
 
   docker:
     name: Docker Build
@@ -124,14 +124,14 @@ jobs:
         context: .
         platforms: linux/amd64
         push: false
-        tags: agentfs:test
+        tags: stratafs:test
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
     - name: Test Docker image
       run: |
-        docker run --rm agentfs:test --version
-        docker run --rm agentfs:test --help
+        docker run --rm stratafs:test --version
+        docker run --rm stratafs:test --help
 
   security:
     name: Security Scan
