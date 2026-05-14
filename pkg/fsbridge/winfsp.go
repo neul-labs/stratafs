@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
-	"time"
 
 	"github.com/neul-labs/stratafs/pkg/config"
 	"github.com/neul-labs/stratafs/pkg/database"
@@ -199,7 +197,7 @@ func (fs *strataFSWin) Readdir(path string, fill func(name string, stat *fuse.St
 	}
 
 	// Get files in this directory
-	files, err := fs.db.ListFiles()
+	files, err := fs.db.ListFiles(false)
 	if err != nil {
 		return -fuse.EIO
 	}
@@ -340,7 +338,7 @@ func (fs *strataFSWin) toSourcePath(path string) string {
 }
 
 func (fs *strataFSWin) isDirectory(path string) bool {
-	files, err := fs.db.ListFiles()
+	files, err := fs.db.ListFiles(false)
 	if err != nil {
 		return false
 	}
