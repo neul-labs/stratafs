@@ -122,8 +122,8 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        platforms: linux/amd64
         push: false
+        load: true
         tags: stratafs:test
         cache-from: type=gha
         cache-to: type=gha,mode=max
