@@ -89,8 +89,8 @@ func (f *ChunkerFactory) AvailableStrategies() []string {
 
 // ChunkingService provides high-level chunking operations
 type ChunkingService struct {
-	factory      *ChunkerFactory
-	defaultOpts  ChunkOptions
+	factory     *ChunkerFactory
+	defaultOpts ChunkOptions
 }
 
 // NewChunkingService creates a new chunking service
@@ -212,4 +212,5 @@ func (s *ChunkingService) ChunkStreamByFileType(reader io.Reader, fileType strin
 	opts.Strategy = s.selectStrategyForFileType(fileType)
 
 	return s.ChunkStream(reader, &opts)
+
 }

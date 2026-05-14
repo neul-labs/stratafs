@@ -77,7 +77,7 @@ func (vi *VectorIndex) AddVector(chunkID int64, vector []float32) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Insert into chunk_vectors table
 	_, err = tx.Exec("INSERT OR REPLACE INTO chunk_vectors (chunk_id, embedding) VALUES (?, ?)", chunkID, vectorBytes)
@@ -103,7 +103,7 @@ func (vi *VectorIndex) RemoveVector(chunkID int64) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Remove from both tables
 	_, err = tx.Exec("DELETE FROM chunk_vectors WHERE chunk_id = ?", chunkID)
@@ -238,8 +238,8 @@ func (vi *VectorIndex) GetStats() map[string]interface{} {
 
 	// Get database file size
 	var pageCount, pageSize int64
-	vi.db.QueryRow("PRAGMA page_count").Scan(&pageCount)
-	vi.db.QueryRow("PRAGMA page_size").Scan(&pageSize)
+	_ = vi.db.QueryRow("PRAGMA page_count").Scan(&pageCount)
+	_ = vi.db.QueryRow("PRAGMA page_size").Scan(&pageSize)
 	stats["db_size_bytes"] = pageCount * pageSize
 
 	return stats
@@ -261,7 +261,7 @@ func (vi *VectorIndex) BatchAddVectors(vectors map[int64][]float32) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	for chunkID, vector := range vectors {
 		if len(vector) != vi.dimensions {

@@ -129,8 +129,8 @@ func (fs *JiraFileSystem) getIssueContent(issueKey string) ([]byte, error) {
 	// Cache locally
 	if fs.localCache != "" {
 		cachePath := filepath.Join(fs.localCache, issueKey+".md")
-		os.MkdirAll(filepath.Dir(cachePath), 0755)
-		os.WriteFile(cachePath, content, 0644)
+		_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
+		_ = os.WriteFile(cachePath, content, 0644)
 	}
 
 	return content, nil
@@ -297,8 +297,8 @@ func (fs *JiraFileSystem) getAttachmentContent(name string) ([]byte, error) {
 	// Cache locally
 	if fs.localCache != "" {
 		cachePath := filepath.Join(fs.localCache, "_attachments", name)
-		os.MkdirAll(filepath.Dir(cachePath), 0755)
-		os.WriteFile(cachePath, data, 0644)
+		_ = os.MkdirAll(filepath.Dir(cachePath), 0755)
+		_ = os.WriteFile(cachePath, data, 0644)
 	}
 
 	return data, nil

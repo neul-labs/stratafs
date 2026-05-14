@@ -230,7 +230,7 @@ func (m *Monitor) Stop() {
 
 	// Stop MCP server
 	if m.mcpServer != nil {
-		m.mcpServer.Stop()
+		_ = m.mcpServer.Stop()
 	}
 
 	// Stop job queue

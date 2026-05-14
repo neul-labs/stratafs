@@ -84,7 +84,7 @@ func (hfs *HybridFileSystem) cacheFile(remotePath string) error {
 	// Set modification time to match remote file
 	remoteInfo, err := hfs.remote.Stat(remotePath)
 	if err == nil {
-		os.Chtimes(cachePath, time.Now(), remoteInfo.ModTime())
+		_ = os.Chtimes(cachePath, time.Now(), remoteInfo.ModTime())
 	}
 
 	return nil
@@ -148,7 +148,7 @@ func (hfs *HybridFileSystem) Walk(root string, walkFn WalkFunc) error {
 			if cacheErr == nil && !cached {
 				// Asynchronously cache the file (don't block walking)
 				go func(p string) {
-					hfs.cacheFile(p)
+					_ = hfs.cacheFile(p)
 				}(path)
 			}
 		}

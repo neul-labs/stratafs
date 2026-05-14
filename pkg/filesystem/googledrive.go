@@ -119,7 +119,7 @@ func loadOrCreateToken(config *oauth2.Config, tokenFile string) (*oauth2.Token, 
 	// Save token
 	if tokenFile != "" {
 		data, _ := json.Marshal(token)
-		os.WriteFile(tokenFile, data, 0600)
+		_ = os.WriteFile(tokenFile, data, 0600)
 	}
 
 	return token, nil
@@ -181,8 +181,8 @@ func (fs *GoogleDriveFileSystem) ReadFile(name string) ([]byte, error) {
 	if fs.localCache != "" {
 		cachePath := filepath.Join(fs.localCache, name)
 		cacheDir := filepath.Dir(cachePath)
-		os.MkdirAll(cacheDir, 0755)
-		os.WriteFile(cachePath, data, 0644)
+		_ = os.MkdirAll(cacheDir, 0755)
+		_ = os.WriteFile(cachePath, data, 0644)
 	}
 
 	return data, nil

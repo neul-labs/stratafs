@@ -44,7 +44,7 @@ func NewEngine(databases map[string]*database.DB, embedder *embeddings.Embedder)
 		} else {
 			ftsAvailable[dirPath] = true
 			// Clean up test table
-			db.GetConn().Exec(`DROP TABLE IF EXISTS fts_test`)
+			_, _ = db.GetConn().Exec(`DROP TABLE IF EXISTS fts_test`)
 		}
 	}
 

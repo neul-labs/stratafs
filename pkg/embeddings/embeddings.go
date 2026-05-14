@@ -159,7 +159,7 @@ func (e *Embedder) GetModelName() string {
 // Close releases resources used by the embedder
 func (e *Embedder) Close() error {
 	if e.model != nil {
-		e.model.Destroy()
+		_ = e.model.Destroy()
 		e.model = nil
 	}
 	return nil

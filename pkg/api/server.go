@@ -332,7 +332,7 @@ func (s *Server) handleSwagger(w http.ResponseWriter, r *http.Request) {
 </body>
 </html>`
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(html))
+	_, _ = w.Write([]byte(html))
 }
 
 // handleRedoc serves the ReDoc documentation

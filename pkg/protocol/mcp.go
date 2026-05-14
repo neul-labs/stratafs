@@ -86,7 +86,7 @@ func (mcp *ModelContextProtocol) handleMCP(w http.ResponseWriter, r *http.Reques
 		},
 	}
 	
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // handleSearch handles search requests from LLMs
@@ -126,7 +126,7 @@ func (mcp *ModelContextProtocol) handleSearch(w http.ResponseWriter, r *http.Req
 	
 	// Return results
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"results": results,
 		"query":   query,
 	})
@@ -147,7 +147,7 @@ func (mcp *ModelContextProtocol) handleResources(w http.ResponseWriter, r *http.
 	
 	// Return resources
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"resources": resources,
 	})
 }
