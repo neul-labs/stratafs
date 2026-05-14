@@ -105,7 +105,7 @@ func (p *GnomeSearchProvider) Start() error {
 // Stop unregisters the search provider from D-Bus
 func (p *GnomeSearchProvider) Stop() error {
 	if p.conn != nil {
-		_ = p.conn.ReleaseName(busName)
+		_, _ = p.conn.ReleaseName(busName)
 		return p.conn.Close()
 	}
 	return nil
