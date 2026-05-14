@@ -172,7 +172,6 @@ func (m *Monitor) Start() error {
 
 	return nil
 }
-}
 
 // runCompactionService periodically removes soft-deleted entries
 func (m *Monitor) runCompactionService() {
