@@ -231,8 +231,10 @@ jobs:
         ONNX_DIR="onnx/darwin-amd64"
         mkdir -p "$ONNX_DIR"
         curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/${ONNX_NAME}.tgz" -o /tmp/onnx.tgz
-        tar -xzf /tmp/onnx.tgz -C "$ONNX_DIR" --strip-components=1
+        tar -xzf /tmp/onnx.tgz -C "$ONNX_DIR"
         rm -f /tmp/onnx.tgz
+        mv "$ONNX_DIR/$ONNX_NAME"/* "$ONNX_DIR"/
+        rmdir "$ONNX_DIR/$ONNX_NAME"
         echo "ONNX Runtime contents:"
         ls -la "$ONNX_DIR"
         ls -la "$ONNX_DIR/lib"
@@ -306,8 +308,10 @@ jobs:
         ONNX_DIR="onnx/darwin-arm64"
         mkdir -p "$ONNX_DIR"
         curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/${ONNX_NAME}.tgz" -o /tmp/onnx.tgz
-        tar -xzf /tmp/onnx.tgz -C "$ONNX_DIR" --strip-components=1
+        tar -xzf /tmp/onnx.tgz -C "$ONNX_DIR"
         rm -f /tmp/onnx.tgz
+        mv "$ONNX_DIR/$ONNX_NAME"/* "$ONNX_DIR"/
+        rmdir "$ONNX_DIR/$ONNX_NAME"
         echo "ONNX Runtime contents:"
         ls -la "$ONNX_DIR"
         ls -la "$ONNX_DIR/lib"
