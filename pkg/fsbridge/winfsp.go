@@ -22,6 +22,9 @@ type WinFspMount struct {
 	source       config.StorageSource
 	showChunks   bool
 	showMetadata bool
+	mountPoint   string
+	allowOther   bool
+	debug        bool
 	fs           *strataFSWin
 	host         *fuse.FileSystemHost
 }
@@ -36,8 +39,36 @@ func NewWinFspMount(db *database.DB, source config.StorageSource, showChunks, sh
 	}
 }
 
-// Mount mounts the filesystem at the specified drive letter or path
-func (m *WinFspMount) Mount(mountPoint string, allowOther, debug bool) error {
+// MountOptions configures the mount behavior.
+type MountOptions struct {
+	MountPoint   string
+	ReadOnly     bool
+	AllowOther   bool
+	Debug        bool
+	ShowChunks   bool
+	ShowMetadata bool
+}
+
+// NewFuseMount creates a WinFsp mount from MountOptions.
+func NewFuseMount(db *database.DB, source config.StorageSource, opts MountOptions) *WinFspMount {
+	return &WinFspMount{
+		db:           db,
+		source:       source,
+		showChunks:   opts.ShowChunks,
+		showMetadata: opts.ShowMetadata,
+		mountPoint:   opts.MountPoint,
+		allowOther:   opts.AllowOther,
+		debug:        opts.Debug,
+	}
+}
+
+// Mount mounts the filesystem with stored options.
+func (m *WinFspMount) Mount() error {
+	return m.mountWithOpts(m.mountPoint, m.allowOther, m.debug)
+}
+
+// mountWithOpts mounts the filesystem at the specified drive letter or path
+func (m *WinFspMount) mountWithOpts(mountPoint string, allowOther, debug bool) error {
 	m.fs = &strataFSWin{
 		db:           m.db,
 		source:       m.source,

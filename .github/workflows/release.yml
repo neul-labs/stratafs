@@ -225,11 +225,17 @@ jobs:
 
     - name: Download ONNX Runtime
       run: |
+        set -e
         ONNX_VERSION="1.16.3"
         ONNX_NAME="onnxruntime-osx-x86_64-${ONNX_VERSION}"
         ONNX_DIR="onnx/darwin-amd64"
         mkdir -p "$ONNX_DIR"
-        curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/${ONNX_NAME}.tgz" | tar -xz -C "$ONNX_DIR" --strip-components=1
+        curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/${ONNX_NAME}.tgz" -o /tmp/onnx.tgz
+        tar -xzf /tmp/onnx.tgz -C "$ONNX_DIR" --strip-components=1
+        rm -f /tmp/onnx.tgz
+        echo "ONNX Runtime contents:"
+        ls -la "$ONNX_DIR"
+        ls -la "$ONNX_DIR/lib"
 
     - name: Build binary
       env:
@@ -294,15 +300,17 @@ jobs:
 
     - name: Download ONNX Runtime
       run: |
-        set -eo pipefail
+        set -e
         ONNX_VERSION="1.16.3"
         ONNX_NAME="onnxruntime-osx-arm64-${ONNX_VERSION}"
         ONNX_DIR="onnx/darwin-arm64"
         mkdir -p "$ONNX_DIR"
-        curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/${ONNX_NAME}.tgz" | tar -xz -C "$ONNX_DIR" --strip-components=1
+        curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/${ONNX_NAME}.tgz" -o /tmp/onnx.tgz
+        tar -xzf /tmp/onnx.tgz -C "$ONNX_DIR" --strip-components=1
+        rm -f /tmp/onnx.tgz
         echo "ONNX Runtime contents:"
         ls -la "$ONNX_DIR"
-        ls -la "$ONNX_DIR/lib" || echo "WARNING: lib directory not found"
+        ls -la "$ONNX_DIR/lib"
 
     - name: Build binary
       env:
@@ -312,10 +320,6 @@ jobs:
         ONNX_DIR="onnx/darwin-arm64"
         export CGO_CFLAGS="-I$PWD/$ONNX_DIR/include"
         export CGO_LDFLAGS="-L$PWD/$ONNX_DIR/lib -lonnxruntime"
-        ls -la "$ONNX_DIR/lib" || echo "lib dir missing, trying dylib in root"
-        if [ ! -d "$ONNX_DIR/lib" ]; then
-          export CGO_LDFLAGS="-L$PWD/$ONNX_DIR -lonnxruntime"
-        fi
 
         BUILD_DIR="build/darwin-arm64"
         mkdir -p "$BUILD_DIR"
