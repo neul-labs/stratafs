@@ -209,83 +209,6 @@ jobs:
         name: stratafs-${{ matrix.os }}-${{ matrix.arch }}
         path: build/stratafs-${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}.*
 
-  build-darwin-amd64:
-    name: Build darwin-amd64
-    runs-on: macos-13
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.24'
-
-    - name: Download ONNX Runtime
-      run: |
-        set -e
-        ONNX_VERSION="1.16.3"
-        ONNX_NAME="onnxruntime-osx-x86_64-${ONNX_VERSION}"
-        ONNX_DIR="onnx/darwin-amd64"
-        mkdir -p "$ONNX_DIR"
-        curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_VERSION}/${ONNX_NAME}.tgz" -o /tmp/onnx.tgz
-        tar -xzf /tmp/onnx.tgz -C "$ONNX_DIR"
-        rm -f /tmp/onnx.tgz
-        mv "$ONNX_DIR/$ONNX_NAME"/* "$ONNX_DIR"/
-        rmdir "$ONNX_DIR/$ONNX_NAME"
-        echo "ONNX Runtime contents:"
-        ls -la "$ONNX_DIR"
-        ls -la "$ONNX_DIR/lib"
-
-    - name: Build binary
-      env:
-        CGO_ENABLED: 1
-        VERSION: ${{ github.ref_name }}
-      run: |
-        ONNX_DIR="onnx/darwin-amd64"
-        export CGO_CFLAGS="-I$PWD/$ONNX_DIR/include"
-        export CGO_LDFLAGS="-L$PWD/$ONNX_DIR/lib -lonnxruntime"
-
-        BUILD_DIR="build/darwin-amd64"
-        mkdir -p "$BUILD_DIR"
-
-        go build \
-          -tags "fts5" \
-          -ldflags "-s -w -X main.version=${VERSION} -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-          -o "$BUILD_DIR/stratafs" \
-          ./cmd/stratafs
-
-        cp -r "$ONNX_DIR/lib" "$BUILD_DIR/" || true
-
-        cat > "$BUILD_DIR/README.txt" << EOF
-        StrataFS ${VERSION}
-        ================
-
-        Platform: darwin/amd64
-        Build Time: $(date -u)
-
-        Installation:
-        1. Extract this archive
-        2. Copy stratafs to a directory in your PATH
-        3. Run 'stratafs config init' to initialize
-
-        For more information: https://github.com/${{ github.repository }}
-        EOF
-
-    - name: Create archive
-      run: |
-        BUILD_DIR="build/darwin-amd64"
-        ARCHIVE_NAME="stratafs-${{ github.ref_name }}-darwin-amd64"
-        cd build && tar -czf "${ARCHIVE_NAME}.tar.gz" "darwin-amd64"
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: stratafs-darwin-amd64
-        path: build/stratafs-${{ github.ref_name }}-darwin-amd64.*
-
   build-darwin-arm64:
     name: Build darwin-arm64
     runs-on: macos-latest
@@ -406,7 +329,7 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [build-linux-windows, build-darwin-amd64, build-darwin-arm64, build-desktop-linux, build-docker]
+    needs: [build-linux-windows, build-darwin-arm64, build-desktop-linux, build-docker]
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
