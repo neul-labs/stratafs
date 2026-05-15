@@ -5,7 +5,7 @@ const os = require("os");
 const path = require("path");
 const { execSync } = require("child_process");
 
-const VERSION = process.env.STRATAFS_VERSION || "0.2.0";
+const VERSION = process.env.STRATAFS_VERSION || "0.2.1";
 const GITHUB_RELEASES_URL = "https://github.com/neul-labs/stratafs/releases/download";
 
 function getPlatform() {

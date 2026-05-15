@@ -1,6 +1,6 @@
 {
   "name": "stratafs",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "StrataFS - A semantic filesystem for AI agents",
   "main": "index.js",
   "bin": {
