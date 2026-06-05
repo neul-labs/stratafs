@@ -23,25 +23,27 @@ make build
 
 ## Build
 
+The Makefile targets that ship with the repo:
+
 | Target | What it does |
 | --- | --- |
-| `make build` | Build with `-tags fts5`. |
-| `make run` | `go run -tags fts5 ./cmd/stratafs`. |
-| `make install` | Install to `$GOBIN/stratafs`. |
-| `make test` | Run the full test suite. |
-| `make test-coverage` | With coverage profile. |
+| `make build` | Build with `-tags fts5` into `build/stratafs`. |
+| `make run` | `go run -tags fts5 cmd/stratafs/main.go`. |
+| `make install` | `go install -tags fts5 cmd/stratafs/main.go`. |
+| `make test` | `go test -tags fts5 -v ./...`. |
+| `make fetch-onnx` | Download the matching ONNX Runtime via `scripts/get-onnx-runtime.sh`. |
+| `make test-onnx` | Run the full test suite with the ONNX Runtime on `LD_LIBRARY_PATH`. |
+| `make release` | Cross-platform release archives via `scripts/build-release.sh`. |
 | `make fmt` | `go fmt ./...`. |
-| `make vet` | `go vet -tags fts5 ./...`. |
+| `make vet` | `go vet ./...`. |
 | `make clean` | Remove `build/`. |
-| `make build-all` | Cross-compile for every supported platform. |
-| `make release` | Produce release archives in `build/release/`. |
+| `make deps` / `make update` | `go mod tidy` (with optional `go get -u ./...` first). |
 
 ## Build tags
 
 | Tag | Effect |
 | --- | --- |
-| `fts5` | Enables SQLite FTS5. **Required.** |
-| `debug` | Enables verbose logging and profiling endpoints. |
+| `fts5` | Enables SQLite FTS5. **Required.** All Makefile targets pass it for you. |
 
 ## Tests
 
@@ -70,12 +72,7 @@ func TestFileParser(t *testing.T) {
 }
 ```
 
-For tests that need a database, use the helper in `pkg/database/testing.go`:
-
-```go
-db, cleanup := database.NewTestDB(t)
-defer cleanup()
-```
+For tests that need a database, open a SQLite DB into a `t.TempDir()` via `database.NewDB`; the schema is initialised on first open.
 
 For tests that need a live embedder, skip gracefully when the model can't be downloaded:
 

@@ -6,9 +6,9 @@ StrataFS ships with a [Wails](https://wails.io/)-powered desktop UI for users wh
 
 - **Dashboard** — daemon status, queue depth, error count, embedding model in use. Start / stop / restart from the menu bar.
 - **Search** — hybrid / FTS / vector modes with a results pane that lets you preview chunks in-place.
-- **Sources** — add, remove, enable, disable local and cloud sources without editing JSON. Credential entry stays in the OS keychain where supported.
+- **Sources** — add, remove, enable, disable local and cloud sources without editing JSON. Cloud credentials are written back to `~/.stratafs/config.json` like everything else.
 - **Export** — kick off `stratafs fs export` from the UI; results land in a directory of your choice.
-- **Settings** — embedding model, worker count, ports, log level. Changes apply on next daemon restart.
+- **Settings** — embedding model, worker count, ports. Changes apply on next daemon restart.
 
 ## Architecture
 

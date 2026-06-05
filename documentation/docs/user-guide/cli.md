@@ -45,11 +45,7 @@ Configuration helpers.
 
 ### `stratafs config init`
 
-Write a default `config.json` to `~/.stratafs/` (or the path given by `--config-dir`). Idempotent — refuses to overwrite an existing config.
-
-### `stratafs config show`
-
-Print the resolved config (file values + environment overrides) as JSON.
+Create the default configuration file and supporting directories under `~/.stratafs/` (or the path given by `--config-dir`).
 
 ## `stratafs fs`
 
@@ -57,26 +53,36 @@ Filesystem bridge subcommands.
 
 ### `stratafs fs export`
 
-Materialize a semantic snapshot of a source as a directory tree of `metadata.json` plus chunk files. Useful for offline review, packaging, or seeding another StrataFS install.
+Export the indexed virtual filesystem into a local directory with metadata and chunk files. Useful for offline review or packaging.
 
 ```bash
-stratafs fs export --source my-docs --output ./export
+stratafs fs export --output ./export
 ```
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--source` | _required_ | Source ID to export. |
-| `--output` | `./stratafs-export` | Destination directory. |
+| `-o`, `--output` | `""` | Output directory for export. |
 
-### `stratafs fs mount`
+## `stratafs mount`
 
-Expose the semantic index as a read-only FUSE/WinFsp filesystem.
+Mount the StrataFS virtual filesystem at a FUSE/WinFsp mount point.
 
 ```bash
-stratafs fs mount --source my-docs --mount-point /mnt/stratafs
+stratafs mount --mount-point /mnt/stratafs
 ```
 
-Each file appears alongside a `metadata.json` and a `_chunks/` directory. macFUSE / FUSE / WinFsp must be installed on the host.
+| Flag | Default | Description |
+| --- | --- | --- |
+| `-m`, `--mount-point` | _required_ | Mount point directory. |
+| `--read-only` | `true` | Mount as read-only. |
+| `--show-chunks` | `false` | Expose `_chunks/` directories alongside each file. |
+| `--show-metadata` | `false` | Expose `metadata.json` files alongside each file. |
+
+macFUSE / FUSE / WinFsp must be installed on the host.
+
+## `stratafs version`
+
+Print the current StrataFS version and build time, then exit.
 
 ## Exit codes
 

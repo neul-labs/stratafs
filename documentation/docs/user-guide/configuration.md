@@ -4,8 +4,9 @@ StrataFS reads its configuration from `~/.stratafs/config.json` (or `%USERPROFIL
 
 ```bash
 stratafs config init
-stratafs config show
 ```
+
+`config init` writes the default `config.json` and creates the supporting directories (FastEmbed model cache, per-source cache directories, queue database).
 
 ## Full config example
 
@@ -17,7 +18,7 @@ stratafs config show
   "sources": [
     {
       "id": "default-local",
-      "name": "Home Directory",
+      "name": "Current Directory",
       "type": "local",
       "enabled": true,
       "path": "/home/you/Documents",
@@ -25,7 +26,7 @@ stratafs config show
       "credentials": null,
       "filters": {
         "include_patterns": ["*"],
-        "exclude_patterns": [".git/**", "node_modules/**"],
+        "exclude_patterns": [".git/**", "node_modules/**", "*.tmp", "*.log"],
         "max_file_size": 104857600,
         "ignore_hidden": true
       }
@@ -56,22 +57,11 @@ stratafs config show
     "compression_threshold": 512,
     "maintenance_interval": "24h",
     "deleted_threshold": "168h"
-  },
-  "chunking": {
-    "default_strategy": "simple",
-    "chunk_size": 1000,
-    "overlap_size": 100,
-    "min_chunk_size": 50,
-    "file_type_strategies": {
-      "markdown": "separator",
-      "code": "separator",
-      "pdf": "sentence",
-      "txt": "sentence",
-      "csv": "separator"
-    }
   }
 }
 ```
+
+Chunking is wired into the queue processor with built-in defaults; it is not currently exposed as a top-level `chunking` config block. See [File Types](file-types.md) for which strategy each parser applies.
 
 ## Sections
 
@@ -113,6 +103,7 @@ Available models:
 | `bge-small-en-v1.5` | 384 | fast | Smaller index, lower quality. |
 | `bge-base-en` | 768 | medium | Original BGE base. |
 | `bge-small-en` | 384 | fast | Original BGE small. |
+| `all-minilm-l6-v2` | 384 | fast | Multilingual Sentence-BERT, very fast. |
 
 ### `database`
 
@@ -122,16 +113,6 @@ Available models:
 | `compression_threshold` | `512` | Bytes. Chunks smaller than this are stored raw. |
 | `maintenance_interval` | `"24h"` | How often to run vacuum / FTS optimize. |
 | `deleted_threshold` | `"168h"` | Soft-deleted rows are hard-deleted after this. |
-
-### `chunking`
-
-| Key | Default | Description |
-| --- | --- | --- |
-| `default_strategy` | `"simple"` | Fallback strategy when an extension isn't mapped. |
-| `chunk_size` | `1000` | Target characters per chunk. |
-| `overlap_size` | `100` | Overlap between adjacent chunks. |
-| `min_chunk_size` | `50` | Drop chunks smaller than this. |
-| `file_type_strategies` | _see above_ | Per-extension strategy mapping. |
 
 ### `filters`
 
@@ -146,33 +127,27 @@ Each source has its own `filters` block.
 
 ## Environment variables
 
-Environment variables override config at runtime — useful for Docker and CI.
+Environment variables override config at runtime — useful for Docker and CI. The set below matches the variables `pkg/config/config.go` reads on boot.
 
 | Variable | Effect |
 | --- | --- |
-| `STRATAFS_GLOBAL_DIR` | Override `global_dir`. |
+| `STRATAFS_GLOBAL_DIR` | Override `global_dir` (where `config.json`, the queue DB, and caches live). |
 | `STRATAFS_API_PORT` | Override `server.api_port`. |
 | `STRATAFS_MCP_PORT` | Override `server.mcp_port`. |
-| `STRATAFS_WORKER_COUNT` | Override `worker.count`. |
-| `STRATAFS_EMBEDDING_MODEL` | Override `embedding.model`. |
-| `STRATAFS_CHUNK_SIZE` | Override `chunking.chunk_size`. |
-| `STRATAFS_CHUNK_STRATEGY` | Override `chunking.default_strategy`. |
-| `STRATAFS_LOG_LEVEL` | `debug` / `info` / `warn` / `error`. |
+| `STRATAFS_WORKERS` | Override `worker.count`. |
+| `STRATAFS_SCAN_INTERVAL` | Override `worker.scan_interval` (Go duration string). |
+| `STRATAFS_MODEL` | Override `embedding.model` (one of the IDs in the table above). |
+| `STRATAFS_FASTEMBED_CACHE` | Override `embedding.cache_dir`. |
+| `STRATAFS_DIRS` | Comma-separated list of extra local paths to attach as additional sources on first init. |
 
 Example:
 
 ```bash
-STRATAFS_API_PORT=9000 STRATAFS_WORKER_COUNT=8 stratafs serve
+STRATAFS_API_PORT=9000 STRATAFS_WORKERS=8 stratafs serve
 ```
 
-## Startup validation
+## First-run behaviour
 
-StrataFS validates the full config on boot. Failures are reported with a hint:
+On first start, `LoadConfig` creates `~/.stratafs/` if it doesn't exist, writes a default `config.json`, and seeds the FastEmbed cache directory. Subsequent starts read the file and re-apply the environment overrides above. The queue database (`queue.db`) is created next to `config.json`.
 
-- Storage credentials are exercised against the backend.
-- Directory paths are checked for read access.
-- Embedding models are loaded and dimension-checked.
-- Ports are probed for conflicts.
-- Glob patterns are compiled.
-
-If any check fails, `stratafs serve` exits non-zero with a structured error.
+For local sources, `ValidateSource` checks that `path` exists on disk; for S3 / GCS / Azure sources it checks that `bucket` (or `container`) is set in `credentials`. Anything else — port conflicts, broken credentials, missing model weights — surfaces the first time the affected subsystem starts, not at config load.

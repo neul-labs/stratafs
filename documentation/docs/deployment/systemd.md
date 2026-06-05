@@ -18,7 +18,7 @@ Type=simple
 ExecStart=/usr/bin/stratafs serve
 Restart=on-failure
 RestartSec=5
-Environment=STRATAFS_LOG_LEVEL=info
+Environment=STRATAFS_WORKERS=4
 
 [Install]
 WantedBy=default.target
@@ -62,7 +62,7 @@ Group=stratafs
 ExecStart=/usr/bin/stratafs serve --config-dir /var/lib/stratafs
 Restart=on-failure
 RestartSec=5
-Environment=STRATAFS_LOG_LEVEL=info
+Environment=STRATAFS_WORKERS=4
 
 # Hardening
 NoNewPrivileges=true

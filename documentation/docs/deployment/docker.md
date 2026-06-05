@@ -71,8 +71,9 @@ Anything in [Configuration → Environment variables](../user-guide/configuratio
 | `STRATAFS_GLOBAL_DIR` | `/app/.stratafs` |
 | `STRATAFS_API_PORT` | `8080` |
 | `STRATAFS_MCP_PORT` | `8081` |
-| `STRATAFS_WORKER_COUNT` | `4` |
-| `STRATAFS_LOG_LEVEL` | `info` |
+| `STRATAFS_WORKERS` | `4` |
+
+`docker-compose.yml` in the repo still sets `STRATAFS_WORKER_COUNT` for backwards compatibility with older builds; the current `pkg/config` reads `STRATAFS_WORKERS`. Pass both if you want the same behaviour across versions.
 
 ## Volumes
 

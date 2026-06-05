@@ -43,10 +43,6 @@ For indexing-heavy workloads:
     "model": "bge-small-en-v1.5",
     "dimension": 384,
     "performance": { "batch_size": 64, "max_concurrency": 4 }
-  },
-  "chunking": {
-    "chunk_size": 600,
-    "overlap_size": 60
   }
 }
 ```
@@ -61,15 +57,11 @@ For search-heavy workloads:
   "database": {
     "compression_enabled": true,
     "maintenance_interval": "6h"
-  },
-  "chunking": {
-    "chunk_size": 1200,
-    "min_chunk_size": 100
   }
 }
 ```
 
-Larger chunks → fewer chunks to score → faster queries, lower recall on tightly-scoped questions.
+Chunk size / overlap are baked into the queue processor today; pick a smaller embedding model for the biggest wins on indexing throughput, and let `database.compression_enabled` stay on for the search-side disk savings.
 
 ## Memory
 
@@ -91,13 +83,14 @@ The vector index dominates the disk cost. A 768-dimension embedding is 3 KB per 
 
 ## Profiling
 
-For ad-hoc profiling:
+The daemon writes pipeline progress to stdout. Pair it with `/queue/stats` to see whether the queue is building up:
 
 ```bash
-STRATAFS_LOG_LEVEL=debug stratafs serve 2>&1 | grep -E '(parse|embed|index|search)_ms'
+stratafs serve 2>&1 | tee stratafs.log &
+watch -n 5 'curl -s http://localhost:8080/queue/stats | jq'
 ```
 
-Each pipeline stage logs its duration at debug level. Spikes in `embed_ms` mean the embedding worker is saturated; spikes in `parse_ms` usually point at a misbehaving large PDF.
+`processing_jobs` should stay above zero; a growing `pending_jobs` count means the embedder is the bottleneck — either drop to BGE Small, lift `worker.count`, or add CPU.
 
 ## Benchmarks
 

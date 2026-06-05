@@ -24,16 +24,16 @@ See [File Types](../user-guide/file-types.md).
 
 ## Chunk
 
-A **chunk** is a substring of a parsed file — small enough to embed cleanly, large enough to carry meaning. StrataFS supports four chunking strategies:
+A **chunk** is a substring of a parsed file — small enough to embed cleanly, large enough to carry meaning. StrataFS ships four chunking strategies in `pkg/chunking`:
 
 | Strategy | When it's used |
 | --- | --- |
-| `simple` | Default fallback. Fixed-width windows with configurable overlap. |
+| `simple` | Default fallback. Fixed-width windows with overlap. |
 | `sentence` | Plain text, PDFs. Splits on sentence boundaries. |
 | `separator` | Markdown, code, CSV. Splits on natural separators (headings, blank lines, commas). |
 | `token` | Strict token-budget chunking for downstream LLM cost control. |
 
-Chunk size, overlap, and the per-extension strategy mapping are all configurable.
+The mapping from file type to strategy lives in the queue processor and parser layers; it is not exposed as user-tunable config today.
 
 ## Embedding
 

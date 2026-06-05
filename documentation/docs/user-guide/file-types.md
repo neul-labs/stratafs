@@ -31,35 +31,18 @@ StrataFS parses a file into plain text before chunking and embedding. The parser
 | --- | --- |
 | Go (`.go`) | Whitespace-aware chunking; identifiers preserved. |
 | Python (`.py`) | Function/class-level boundaries when possible. |
-| JavaScript / TypeScript (`.js`, `.jsx`, `.ts`, `.tsx`) | — |
-| Java (`.java`), Kotlin (`.kt`) | — |
-| C / C++ / Objective-C (`.c`, `.cc`, `.cpp`, `.h`, `.hpp`, `.m`, `.mm`) | — |
-| Rust (`.rs`), Swift (`.swift`), Ruby (`.rb`), PHP (`.php`) | — |
-| Shell (`.sh`, `.bash`, `.zsh`, `.fish`) | — |
-| HTML (`.html`, `.htm`), XML (`.xml`) | Tag-stripped to text. |
-| JSON (`.json`), YAML (`.yml`, `.yaml`), TOML (`.toml`), INI (`.ini`) | Stringified key/value structure. |
+| JavaScript / TypeScript (`.js`, `.ts`) | — |
+| Java (`.java`) | — |
+| C / C++ (`.c`, `.cpp`, `.h`, `.hpp`) | — |
+| Rust (`.rs`), Ruby (`.rb`), PHP (`.php`) | — |
+| Shell (`.sh`, `.bash`, `.zsh`) | — |
+| SQL (`.sql`) | Treated as code. |
+| HTML (`.html`, `.htm`), XML (`.xml`), SVG (`.svg`) | Tag-stripped to text. |
+| JSON (`.json`), YAML (`.yml`, `.yaml`), TOML (`.toml`), INI (`.ini`, `.conf`, `.cfg`) | Stringified key/value structure. |
 
 ## How the right strategy is chosen
 
-The chunking strategy is resolved in this order:
-
-1. Explicit per-file override (advanced — not exposed via CLI).
-2. `chunking.file_type_strategies` mapping for the file extension.
-3. `chunking.default_strategy`.
-
-Defaults from `stratafs config init`:
-
-```json
-"file_type_strategies": {
-  "markdown": "separator",
-  "code": "separator",
-  "pdf": "sentence",
-  "txt": "sentence",
-  "csv": "separator"
-}
-```
-
-The keys are **logical categories**, not raw extensions. Internally StrataFS maps each extension to a category before consulting this map. Override the global default with `chunking.default_strategy`.
+`pkg/chunking` ships four strategies (`simple`, `separator`, `sentence`, `token`). The queue processor picks one based on the parser's classification of the file's content — Markdown, code, CSV, and similar structured formats route to `separator`; PDFs and plain text route to `sentence`; everything else falls back to `simple`. There is no top-level `chunking` config block today; the mapping lives in the processor and parser layers and is not user-tunable from `config.json`.
 
 ## Filtering by extension
 

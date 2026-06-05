@@ -4,11 +4,15 @@ StrataFS exposes search through three surfaces — CLI, REST, and MCP — all ba
 
 ## Modes
 
+`pkg/search` defines five modes (`SearchMode` in `pkg/search/types.go`); the three you'll reach for day-to-day are:
+
 | Mode | What it does | When to use it |
 | --- | --- | --- |
-| `hybrid` (default) | FTS5 BM25 + vector similarity + metadata score, fused with configurable weights | General-purpose, always a safe default |
+| `hybrid` (default) | FTS5 BM25 + vector similarity + metadata score, fused with weighted scoring | General-purpose, always a safe default |
 | `fulltext` | FTS5 BM25 only | Exact keyword / phrase / boolean queries |
 | `vector` | Cosine similarity only | Semantic queries where wording differs from the source |
+
+Two additional modes — `faceted` (metadata-only filtering) and `weighted` (caller-supplied component weights) — are available through the REST API for advanced callers.
 
 ## CLI
 
@@ -34,105 +38,65 @@ Flags:
 curl "http://localhost:8080/search?q=authentication+middleware&limit=5"
 ```
 
+Common query parameters (parsed by `parseSearchParams` in `pkg/api/server.go`):
+
 | Parameter | Default | Description |
 | --- | --- | --- |
-| `q` | _required_ | Query string. |
-| `mode` | `hybrid` | `hybrid` \| `fulltext` \| `vector`. |
-| `limit` | `10` | Max results (cap: 100). |
-| `offset` | `0` | Pagination offset. |
-| `sources` | _all_ | Comma-separated source IDs. |
+| `q` | _required_ | Query string. Mapped to `SearchRequest.Query`. |
+| `mode` | `hybrid` | `hybrid` \| `fulltext` \| `vector` \| `faceted` \| `weighted`. |
+| `limit` | `10` | Max results. |
 | `extensions` | _all_ | Comma-separated file extensions, e.g. `md,go`. |
-| `types` | _all_ | High-level types: `code`, `docs`, `data`. |
-| `directories` | _all_ | Comma-separated path prefixes. |
-| `min_size`, `max_size` | _none_ | Filter by file size (bytes). |
-| `include_content` | `true` | Return chunk content. |
-| `include_metadata` | `true` | Return chunk + file metadata. |
-| `highlight` | `false` | Wrap matched terms in `<mark>` tags. |
-| `sort_by` | `relevance` | `relevance` \| `modified` \| `path` \| `size`. |
-| `sort_order` | `desc` | `asc` \| `desc`. |
 
-For complex requests prefer `POST /search` with a JSON body:
+For complex requests, `POST /search` accepts the full `SearchRequest` JSON shape:
 
 ```bash
 curl -X POST http://localhost:8080/search \
   -H 'Content-Type: application/json' \
   -d '{
-    "q": "authentication middleware",
-    "mode": "hybrid",
+    "query": "authentication middleware",
+    "mode": "weighted",
     "limit": 10,
     "weights": {
-      "fts": 0.5,
-      "vector": 0.4,
-      "metadata": 0.1
+      "fulltext": 0.4,
+      "vector": 0.3,
+      "recency": 0.1,
+      "filename": 0.1,
+      "filetype": 0.05,
+      "filesize": 0.05
     },
     "filters": {
-      "extensions": ["go", "md"],
+      "file_extensions": [".go", ".md"],
       "directories": ["pkg/", "docs/"]
-    }
+    },
+    "include_content": true,
+    "highlight_results": false
   }'
 ```
 
+The `SearchFilters` block supports `file_extensions`, `file_types`, `directories`, `min_size` / `max_size`, `modified_after` / `modified_before`, `created_after` / `created_before`, `has_embeddings`, `min_length` / `max_length`, and `languages`.
+
 ## Ranking weights
 
-In `hybrid` mode the final score for a chunk is:
+The hybrid scorer fuses six components — `SearchWeights` in `pkg/search/types.go`:
 
-```
-score = (w_fts × bm25_norm) + (w_vector × cosine) + (w_metadata × metadata_score)
-```
+| Weight | Default | What it scores |
+| --- | --- | --- |
+| `fulltext` | `0.4` | FTS5 BM25. |
+| `vector` | `0.3` | Cosine similarity from `sqlite-vec`. |
+| `recency` | `0.1` | How recently the file was modified. |
+| `filename` | `0.1` | Filename token overlap with the query. |
+| `filetype` | `0.05` | Bonus for code / doc extensions over noise. |
+| `filesize` | `0.05` | Penalty for outlier file sizes. |
 
-Defaults: `w_fts = 0.5`, `w_vector = 0.4`, `w_metadata = 0.1`. Tune them per-request via the `weights` block on the POST body, or globally in `config.json`.
-
-`metadata_score` rewards:
-
-- Filename matches against the query terms.
-- Recently modified files.
-- Files in directories whose names match the query.
-- Common code/doc extensions over binary blobs.
+`hybrid` uses these defaults. `weighted` uses whatever you send in the request body.
 
 ## Hybrid query, under the hood
 
-StrataFS runs a single SQL statement using CTEs:
-
-```sql
-WITH fts_results AS (
-  SELECT file_id, chunk_id, bm25(file_chunks_fts) AS score
-  FROM file_chunks_fts WHERE file_chunks_fts MATCH ?
-  ORDER BY score LIMIT ?
-),
-vec_results AS (
-  SELECT file_id, chunk_id, distance AS score
-  FROM file_chunks_vec WHERE embedding MATCH ? AND k = ?
-)
-SELECT ... FROM file_chunks
-  LEFT JOIN fts_results USING (chunk_id)
-  LEFT JOIN vec_results USING (chunk_id)
-  ORDER BY weighted_score DESC LIMIT ?;
-```
-
-This means there is no application-level result merging — the database does the work, and execution stays inside a single SQLite transaction.
+Hybrid search runs as a single statement that combines an FTS5 BM25 match over the `file_chunks_fts` virtual table with a vector lookup against the `sqlite-vec` index, joined back to `file_chunks` / `files`. Component scores are normalised in Go and combined with `SearchWeights`. Per-source isolation means each query runs against a single SQLite file — there is no application-level merge across sources beyond ranking the merged result list.
 
 ## Response shape
 
-```json
-{
-  "query": "machine learning algorithms",
-  "total_results": 42,
-  "results": [
-    {
-      "file_path": "/docs/ml/neural-networks.md",
-      "source_name": "Documentation",
-      "chunk_content": "Neural networks are a class of machine learning algorithms...",
-      "relevance_score": 0.95,
-      "chunk_offset": 1024,
-      "chunk_length": 256,
-      "chunk_strategy": "sentence",
-      "file_size": 15420,
-      "modified_time": "2026-04-22T10:30:00Z"
-    }
-  ],
-  "search_time_ms": 45
-}
-```
+The handler returns a `SearchResponse` containing the results array, the resolved `mode`, the original `query`, and `search_time_ms`. Each `SearchResult` carries the file path, chunk content / snippet, the per-component scores (`fulltext_score`, `vector_score`, `recency_score`, `filename_score`, `filetype_score`, `filesize_score`), and optional `metadata` and `chunk_offset` / `chunk_length` fields. See `pkg/search/types.go` for the exact JSON tags.
 
 ## Tips
 

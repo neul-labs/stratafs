@@ -38,8 +38,8 @@ The macOS `.pkg` installer drops a LaunchAgent that starts StrataFS at login. To
 
   <key>EnvironmentVariables</key>
   <dict>
-    <key>STRATAFS_LOG_LEVEL</key>
-    <string>info</string>
+    <key>STRATAFS_WORKERS</key>
+    <string>4</string>
   </dict>
 </dict>
 </plist>
@@ -79,7 +79,7 @@ launchctl unload ~/Library/LaunchAgents/org.stratafs.daemon.plist
 tail -f /tmp/stratafs.stdout.log /tmp/stratafs.stderr.log
 ```
 
-For structured logs, set `STRATAFS_LOG_LEVEL=debug` in `EnvironmentVariables` and pipe to a file under `~/Library/Logs/stratafs/`.
+For long-lived deployments, redirect both streams to files under `~/Library/Logs/stratafs/` via `StandardOutPath` / `StandardErrorPath` and rotate them with `newsyslog` or `logrotate`.
 
 ## Verifying it's healthy
 

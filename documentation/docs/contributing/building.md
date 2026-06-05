@@ -43,27 +43,15 @@ DYLD_LIBRARY_PATH=$(pwd)/build/onnx/darwin-arm64/lib ./build/stratafs serve
 
 The release builds bundle the runtime alongside the binary so this is invisible to end users.
 
-## Cross-compilation
-
-```bash
-make build-all
-```
-
-Produces binaries for every supported `GOOS/GOARCH` under `build/<os>-<arch>/`. Override what you build with:
-
-```bash
-ONNX_VERSION=1.17.0 TARGET_OS=linux TARGET_ARCH=amd64 make build-all
-```
-
 ## Release builds
 
 ```bash
 make release
-# or:
-VERSION=0.3.0 ONNX_VERSION=1.17.0 make release
 ```
 
-Produces archives under `build/release/` containing the binary plus the matching ONNX Runtime libraries. CI runs the same target for tagged commits.
+This calls `scripts/build-release.sh`, which cross-compiles for the supported `GOOS/GOARCH` matrix and bundles each binary with the matching ONNX Runtime libraries. Output lands under `build/release/`. CI runs the same target for tagged commits.
+
+The bundling logic itself lives in `scripts/release-bundle.sh`; see the script's header for the supported target triples and how to override the ONNX version.
 
 ## Desktop app (Wails)
 

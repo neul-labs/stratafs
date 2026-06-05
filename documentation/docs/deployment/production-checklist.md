@@ -25,10 +25,10 @@ StrataFS is designed for local-first use. Putting it on the network requires a f
 
 ## Configuration
 
-- [ ] Set `STRATAFS_LOG_LEVEL=info` or `warn`. `debug` is too verbose for production.
 - [ ] Pin a specific image tag (e.g. `ghcr.io/neul-labs/stratafs:v0.2.0`) — don't deploy `latest`.
-- [ ] Set `worker.scan_interval` to a value that respects your cloud-storage rate limits.
+- [ ] Set `worker.scan_interval` (or `STRATAFS_SCAN_INTERVAL`) to a value that respects your cloud-storage rate limits.
 - [ ] Bound `filters.max_file_size` to keep one giant file from stalling the queue.
+- [ ] Tune `STRATAFS_WORKERS` to match the available CPU; default is 4.
 
 ## Secrets
 
@@ -40,8 +40,7 @@ StrataFS is designed for local-first use. Putting it on the network requires a f
 
 - [ ] Poll `/health` from your monitoring system. Alert on non-200.
 - [ ] Scrape `/queue/stats` — alert if `pending_jobs` grows unboundedly (indicates worker starvation).
-- [ ] Scrape `/sources/stats` — alert if any source's `status` is not `active` for more than a few minutes.
-- [ ] Aggregate stdout/stderr logs (Loki, CloudWatch, etc.). Structured logging is on by default.
+- [ ] Aggregate stdout/stderr logs (Loki, CloudWatch, etc.). Per-source health endpoints are tracked on the [Roadmap](../contributing/roadmap.md).
 
 ## Backups and disaster recovery
 

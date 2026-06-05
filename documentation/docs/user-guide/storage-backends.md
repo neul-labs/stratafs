@@ -154,15 +154,10 @@ Each source has its own `filters` block. Filters apply in order: `include_patter
 ## Troubleshooting
 
 **Credential errors**
-: Run `curl http://localhost:8080/sources/stats` — failed sources report their last error. Common causes: wrong region, missing IAM permission, expired key.
+: `stratafs serve` logs the underlying backend error on the first scan. Common causes: wrong region, missing IAM permission, expired key. Re-run after editing `config.json`.
 
 **Slow scans**
-: Check `local_cache_dir` disk usage and free space. Raise `worker.scan_interval` and trim `include_patterns`.
+: Check `local_cache_dir` disk usage and free space. Raise `worker.scan_interval` (or `STRATAFS_SCAN_INTERVAL`) and trim `include_patterns`.
 
 **Files missing from search**
-: Confirm the file passed filters by inspecting the queue stats endpoint. Hidden files require `ignore_hidden: false`. Files above `max_file_size` are silently skipped.
-
-```bash
-# Verbose logs to debug a source
-STRATAFS_LOG_LEVEL=debug stratafs serve
-```
+: Check the daemon stdout for parse / queue errors and `curl http://localhost:8080/queue/stats` for stuck jobs. Hidden files require `ignore_hidden: false`. Files above `max_file_size` are silently skipped.

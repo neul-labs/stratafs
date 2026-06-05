@@ -1,6 +1,6 @@
 site_name: StrataFS
 site_description: A semantic filesystem that transforms passive file storage into an intelligent, searchable knowledge base.
-# site_url: TODO(domain) — set this to the published docs URL before building social cards.
+site_url: https://stratafs.docs.neullabs.com/
 repo_url: https://github.com/neul-labs/stratafs
 repo_name: neul-labs/stratafs
 edit_uri: edit/main/documentation/docs/

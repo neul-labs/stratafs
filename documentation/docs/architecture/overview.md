@@ -113,7 +113,7 @@ Both servers share state — anything indexed through one is visible to the othe
 
 ## Configuration
 
-JSON config at `~/.stratafs/config.json`. Environment variables override at runtime. Full validation on boot — credential checks, port availability, embedding model load, glob compile. See [Configuration](../user-guide/configuration.md).
+JSON config at `~/.stratafs/config.json`. Environment variables override at runtime. `ValidateSource` checks per-source basics (path exists for local, bucket / container set for cloud); broken credentials, missing model weights, or port conflicts surface the first time the affected subsystem starts. See [Configuration](../user-guide/configuration.md).
 
 ## Security model
 

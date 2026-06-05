@@ -1,14 +1,23 @@
 # Model Context Protocol
 
-StrataFS runs a [Model Context Protocol](https://modelcontextprotocol.io) server alongside the REST API. The MCP server is purpose-built for AI agents: it returns results pre-shaped for LLM context windows, with metadata an agent can act on without extra round-trips.
+StrataFS runs a [Model Context Protocol](https://modelcontextprotocol.io) server alongside the REST API. The MCP server reuses the same hybrid search engine, with response shapes trimmed for LLM context windows.
 
-Default port: `:8081`.
+Default port: `:8081` (`pkg/protocol/mcp.go`).
 
 ## Endpoints
 
+The MCP server registers four routes:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/mcp` | Protocol version and advertised capabilities. |
+| `GET` / `POST` | `/mcp/search` | Search optimized for agent consumption. |
+| `GET` | `/mcp/documents/{path}` | Full-document retrieval. |
+| `GET` | `/mcp/resources` | List indexed sources as MCP resources. |
+
 ### `GET /mcp`
 
-Protocol info and capabilities.
+Protocol info and capabilities:
 
 ```bash
 curl http://localhost:8081/mcp
@@ -16,100 +25,42 @@ curl http://localhost:8081/mcp
 
 ```json
 {
-  "protocol_version": "1.0",
-  "server_name": "stratafs-mcp",
-  "capabilities": {
-    "search": true,
-    "resources": true,
-    "tools": ["search", "retrieve", "stats"]
-  },
-  "description": "StrataFS Model Context Protocol Server"
+  "protocol": "mcp",
+  "version": "1.0.0",
+  "capabilities": ["search", "resources"]
 }
 ```
 
 ### `GET /mcp/search`
 
-Search optimized for agent consumption. Same engine as `/search` on the REST API, but the response is trimmed to the fields an agent typically needs.
+Search optimized for agent consumption. Backed by the same `SearchEngine` as the REST `/search` endpoint, but the response is shaped for LLM context windows. The richer filter / weights surface lives on the REST API — see [Search → REST API](../user-guide/search.md#rest-api).
 
 ```bash
-curl "http://localhost:8081/mcp/search?q=API+authentication&context=web+development"
+curl "http://localhost:8081/mcp/search?q=API+authentication&limit=5"
 ```
 
 | Parameter | Default | Description |
 | --- | --- | --- |
 | `q` | _required_ | The query. |
-| `context` | _none_ | Additional terms used to boost relevance (e.g. the conversation topic). |
-| `max_results` | `5` | Cap on results (max: 20). |
+| `limit` | `10` | Cap on results. |
 
-Response:
+### `GET /mcp/documents/{path}`
 
-```json
-{
-  "query": "API authentication",
-  "context": "web development",
-  "results": [
-    {
-      "resource_id": "docs/api/auth.md#jwt-tokens",
-      "title": "JWT Token Authentication",
-      "content": "JWT tokens provide stateless authentication...",
-      "relevance": 0.92,
-      "metadata": {
-        "file_type": "markdown",
-        "section": "JWT Tokens",
-        "source": "API Documentation"
-      }
-    }
-  ],
-  "suggested_actions": [
-    "Show JWT implementation example",
-    "Explain token validation process"
-  ]
-}
+Fetch a stored document by its path within an indexed source. The path after `/mcp/documents/` is looked up in the per-source database.
+
+```bash
+curl "http://localhost:8081/mcp/documents/docs/auth.md"
 ```
-
-`suggested_actions` is a model-generated next-step prompt list. Agents can surface it as quick replies.
 
 ### `GET /mcp/resources`
 
-Resource discovery. Lists tools an agent can call.
+Enumerate the sources StrataFS is currently indexing as MCP resources. Each entry carries a `type`, `name`, and `path` so an agent can map the resource back to a search call.
 
 ```json
 {
   "resources": [
-    { "id": "search",   "name": "Semantic Search",      "type": "tool" },
-    { "id": "retrieve", "name": "Document Retrieval",   "type": "tool" }
+    { "type": "directory", "name": "/Users/you/Documents", "path": "/Users/you/Documents" }
   ]
-}
-```
-
-### `POST /mcp/tools/call`
-
-Structured tool execution.
-
-```bash
-curl -X POST http://localhost:8081/mcp/tools/call \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "tool": "search",
-    "parameters": {
-      "query": "error handling patterns",
-      "max_results": 3,
-      "include_code_examples": true
-    }
-  }'
-```
-
-Response:
-
-```json
-{
-  "tool": "search",
-  "status": "success",
-  "result": {
-    "matches": 3,
-    "resources": [ /* ... */ ]
-  },
-  "execution_time_ms": 120
 }
 ```
 
@@ -117,51 +68,32 @@ Response:
 
 ### Claude Desktop / Claude Code
 
-Add an entry under `mcpServers` in your client config:
+Run `stratafs serve` (which boots both the REST and MCP servers on `:8080` and `:8081`), then point your client at the running daemon's MCP endpoint via your client's HTTP-MCP bridge.
 
-```json
-{
-  "mcpServers": {
-    "stratafs": {
-      "command": "stratafs",
-      "args": ["serve", "--mcp-only"],
-      "env": {
-        "STRATAFS_LOG_LEVEL": "warn"
-      }
-    }
-  }
-}
-```
-
-`--mcp-only` runs without the REST API and without re-spawning a daemon. For a long-running shared daemon, point the client at the existing endpoint via your client's HTTP-MCP bridge.
+There is no dedicated MCP-only flag today — `serve` always brings both servers up together. The two share state, so anything indexed via one is visible to the other.
 
 ### Custom Python client
 
 ```python
 import requests
 
-resp = requests.post(
-    "http://localhost:8081/mcp/tools/call",
-    json={"tool": "search", "parameters": {"query": "rate limiting"}},
+resp = requests.get(
+    "http://localhost:8081/mcp/search",
+    params={"q": "rate limiting", "limit": 5},
     timeout=10,
 )
-for hit in resp.json()["result"]["resources"]:
-    print(hit["resource_id"], hit["relevance"])
+for hit in resp.json()["results"]:
+    print(hit["file"], hit["score"])
 ```
 
 ### Custom TypeScript client
 
 ```typescript
-const res = await fetch("http://localhost:8081/mcp/tools/call", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    tool: "search",
-    parameters: { query: "rate limiting", max_results: 5 },
-  }),
-});
-const { result } = await res.json();
-console.log(result.resources);
+const res = await fetch(
+  `http://localhost:8081/mcp/search?q=${encodeURIComponent("rate limiting")}&limit=5`,
+);
+const { results } = await res.json();
+results.forEach(r => console.log(r.file, r.score));
 ```
 
 ## When to prefer MCP over REST
@@ -171,6 +103,6 @@ console.log(result.resources);
 | Agent tool-use loop | **MCP** — designed for it. |
 | Application embedding | REST — richer filters, OpenAPI. |
 | One-off scripts | Either. REST is more familiar. |
-| Streaming long results | REST (with `Transfer-Encoding: chunked`). |
+| Document retrieval inside an agent | MCP `/mcp/documents/{path}` keeps the conversation on one origin. |
 
 The two servers share state. Anything indexed via one is visible to the other.

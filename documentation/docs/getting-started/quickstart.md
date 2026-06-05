@@ -10,11 +10,7 @@ stratafs config init
 
 This writes a default config to `~/.stratafs/config.json` and creates the supporting directories (cache, logs, embedding model cache).
 
-Inspect it:
-
-```bash
-stratafs config show
-```
+Open the resulting `~/.stratafs/config.json` in your editor to inspect the defaults.
 
 ## 2. Add a source
 
@@ -92,5 +88,5 @@ For the long version, see [Concepts](concepts.md) and the [Architecture overview
 
 - [Configuration reference](../user-guide/configuration.md) — every knob, with defaults.
 - [Search guide](../user-guide/search.md) — hybrid / FTS-only / semantic modes, filters, ranking weights.
-- [CLI reference](../user-guide/cli.md) — `stratafs serve`, `search`, `config`, `fs export`, `fs mount`.
+- [CLI reference](../user-guide/cli.md) — `stratafs serve`, `search`, `config`, `fs export`, `mount`.
 - [Desktop app](../desktop/overview.md) — if you'd rather not touch a terminal.
