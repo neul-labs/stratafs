@@ -14,11 +14,27 @@
     "stratafs",
     "filesystem",
     "semantic",
+    "semantic-search",
     "search",
-    "ai"
+    "vector-search",
+    "embeddings",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "ai-agents",
+    "rag"
   ],
-  "author": "StrataFS Contributors",
+  "author": "Neul Labs <contact@neullabs.com>",
   "license": "MIT",
+  "homepage": "https://stratafs.neullabs.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neul-labs/stratafs.git",
+    "directory": "packages/npm/stratafs"
+  },
+  "bugs": {
+    "url": "https://github.com/neul-labs/stratafs/issues"
+  },
   "engines": {
     "node": ">=18.0.0"
   },

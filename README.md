@@ -11,7 +11,9 @@
 [![CI](https://github.com/neul-labs/stratafs/actions/workflows/ci.yml/badge.svg)](https://github.com/neul-labs/stratafs/actions/workflows/ci.yml)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-blue?logo=docker)](https://github.com/neul-labs/stratafs/pkgs/container/stratafs)
 
-[Documentation](documentation/) · [Quickstart](documentation/docs/getting-started/quickstart.md) · [Architecture](documentation/docs/architecture/overview.md) · [MCP for agents](documentation/docs/ai-integration/mcp.md) · [Roadmap](documentation/docs/contributing/roadmap.md)
+**[Website](https://stratafs.neullabs.com) · [Documentation](https://docs.neullabs.com/stratafs) · [GitHub](https://github.com/neul-labs/stratafs)**
+
+[Quickstart](documentation/docs/getting-started/quickstart.md) · [Architecture](documentation/docs/architecture/overview.md) · [MCP for agents](documentation/docs/ai-integration/mcp.md) · [Roadmap](documentation/docs/contributing/roadmap.md)
 
 </div>
 
@@ -448,6 +450,18 @@ mkdocs serve
 Pull requests welcome. For larger changes, open an issue first to align on the approach. Every PR runs the full test suite plus a Docker build in CI.
 
 ---
+
+## Part of the Neul Labs toolchain
+
+StrataFS is part of the Neul Labs command-line & filesystem toolchain:
+
+| Project | What it does |
+|---------|--------------|
+| [stout](https://github.com/neul-labs/stout) | A drop-in replacement for the Homebrew CLI that's 10-100x faster. |
+| [recurl](https://github.com/neul-labs/recurl) | curl that just works — drop-in replacement with automatic anti-bot bypass. |
+| [rewget](https://github.com/neul-labs/rewget) | wget, but it works everywhere. |
+
+Explore the full toolchain at [neullabs.com](https://www.neullabs.com).
 
 ## License
 
