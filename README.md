@@ -2,7 +2,7 @@
 
 # StrataFS
 
-**A semantic filesystem that turns passive file storage into an intelligent, searchable knowledge base — built for the AI era.**
+**A local, offline hybrid-RAG search server — BM25 + vector + metadata retrieval over your files, local or cloud — exposed to AI agents as an MCP search server.**
 
 [![npm](https://img.shields.io/npm/v/stratafs.svg?logo=npm&label=npm)](https://www.npmjs.com/package/stratafs)
 [![PyPI](https://img.shields.io/pypi/v/stratafs.svg?logo=pypi&label=pypi)](https://pypi.org/project/stratafs/)
@@ -19,10 +19,10 @@
 
 ---
 
-StrataFS watches your directories — local **or** cloud — parses files into semantic chunks, generates vector embeddings, and exposes everything through a hybrid search engine that combines full-text and semantic similarity. It speaks the [Model Context Protocol](https://modelcontextprotocol.io), so any MCP-aware agent can use your filesystem as a structured knowledge resource. No SaaS. No lock-in. Read-only by design.
+StrataFS is a local, offline hybrid RAG search engine. It watches your directories — local **or** cloud — parses files into chunks, generates vector embeddings, and serves everything through a hybrid retrieval engine that fuses BM25 full-text, vector similarity, and metadata ranking in a single query. It speaks the [Model Context Protocol](https://modelcontextprotocol.io), so any MCP-aware agent or assistant can search your files as a structured knowledge resource — a semantic filesystem, if you like. No SaaS. No lock-in. Read-only by design.
 
 ```bash
-# 30 seconds to your first semantic search:
+# 30 seconds to your first hybrid search:
 npm install -g stratafs && stratafs config init && stratafs serve &
 stratafs search "where do we handle JWT refresh?"
 ```

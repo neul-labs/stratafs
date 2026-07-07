@@ -1,7 +1,7 @@
 {
   "name": "stratafs",
   "version": "0.2.1",
-  "description": "StrataFS - A semantic filesystem for AI agents",
+  "description": "StrataFS - A local, offline hybrid-RAG (BM25 + vector + metadata) search server for AI agents, with a native MCP server",
   "main": "index.js",
   "bin": {
     "stratafs": "bin/stratafs.js"
@@ -12,17 +12,23 @@
   },
   "keywords": [
     "stratafs",
-    "filesystem",
-    "semantic",
-    "semantic-search",
-    "search",
-    "vector-search",
-    "embeddings",
+    "rag",
+    "hybrid-search",
+    "hybrid-rag",
     "mcp",
+    "mcp-server",
     "model-context-protocol",
-    "ai",
+    "bm25",
+    "vector-search",
+    "semantic-search",
+    "offline-search",
+    "local-first",
+    "embeddings",
     "ai-agents",
-    "rag"
+    "ai",
+    "search",
+    "filesystem",
+    "semantic-filesystem"
   ],
   "author": "Neul Labs <contact@neullabs.com>",
   "license": "MIT",

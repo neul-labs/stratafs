@@ -8,7 +8,7 @@ hide:
 
 # StrataFS
 
-<p class="tagline">A semantic filesystem that transforms passive file storage into an intelligent, searchable knowledge base.</p>
+<p class="tagline">A local, offline hybrid-RAG search server — BM25 + vector + metadata retrieval over local and cloud storage, exposed to AI agents as a native MCP search server.</p>
 
 [Get Started](getting-started/quickstart.md){ .md-button .md-button--primary }
 [View on GitHub :fontawesome-brands-github:](https://github.com/neul-labs/stratafs){ .md-button }

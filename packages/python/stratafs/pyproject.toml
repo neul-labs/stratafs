@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "stratafs"
 dynamic = ["version"]
-description = "StrataFS - A semantic filesystem for AI agents"
+description = "StrataFS - A local, offline hybrid-RAG (BM25 + vector + metadata) search server for AI agents, with a native MCP server"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
@@ -14,17 +14,23 @@ authors = [
 ]
 keywords = [
     "stratafs",
-    "filesystem",
-    "semantic",
-    "semantic-search",
-    "search",
-    "vector-search",
-    "embeddings",
-    "mcp",
-    "model-context-protocol",
-    "ai",
-    "ai-agents",
     "rag",
+    "hybrid-search",
+    "hybrid-rag",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "bm25",
+    "vector-search",
+    "semantic-search",
+    "offline-search",
+    "local-first",
+    "embeddings",
+    "ai-agents",
+    "ai",
+    "search",
+    "filesystem",
+    "semantic-filesystem",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

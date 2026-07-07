@@ -1,5 +1,5 @@
 site_name: StrataFS
-site_description: A semantic filesystem that transforms passive file storage into an intelligent, searchable knowledge base.
+site_description: A local, offline hybrid-RAG search server — BM25 + vector + metadata retrieval over local and cloud storage, exposed to AI agents as a native MCP search server.
 site_url: https://docs.neullabs.com/stratafs/
 repo_url: https://github.com/neul-labs/stratafs
 repo_name: neul-labs/stratafs
